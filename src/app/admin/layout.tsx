@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
-import { createClient, createServiceClient } from "@/lib/supabase/server"
+import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { AdminSidebar } from "@/components/layout/admin-sidebar"
 
 export const metadata: Metadata = {
@@ -14,8 +14,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!user) redirect("/login?redirect=/admin")
 
-  // Use service client to bypass stub-type limitations for dynamic role check
-  const svc = await createServiceClient()
+  // Use admin client (service-role) to read role — bypasses RLS user self-read restriction
+  const svc = createAdminClient()
   const { data: profile } = await svc
     .from("users")
     .select("role")

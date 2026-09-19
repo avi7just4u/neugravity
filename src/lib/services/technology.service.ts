@@ -17,7 +17,7 @@ export const TechnologyService = {
       const supabase = await createServiceClient()
       let query = supabase
         .from("technologies")
-        .select("*", { count: "exact" })
+        .select("id,slug,name,tagline,description,type,icon_url,logo_url,status,difficulty,popularity_score,trending_score,featured,verified,created_at,updated_at", { count: "exact" })
         .eq("published", true)
         .order("popularity_score", { ascending: false })
         .range(from, to)
@@ -61,24 +61,20 @@ export const TechnologyService = {
   async getRelatedTechnologies(technologyId: string, limit = 6): Promise<Technology[]> {
     try {
       const supabase = await createServiceClient()
-      const { data: rels } = await supabase
+      // Single join query — avoids two round-trips (N+1 pattern)
+      const { data, error } = await supabase
         .from("technology_relationships")
-        .select("to_technology_id")
+        .select("technologies!to_technology_id(id,slug,name,tagline,type,icon_url,popularity_score,trending_score,featured,published)")
         .eq("from_technology_id", technologyId)
         .limit(limit)
 
-      if (!rels || rels.length === 0) return []
-
-      const ids = rels.map((r) => r.to_technology_id)
-      const { data, error } = await supabase
-        .from("technologies")
-        .select("*")
-        .in("id", ids)
-        .eq("published", true)
-
       if (error || !data) return []
-      return data as Technology[]
-    } catch {
+
+      return data
+        .map((r: Record<string, unknown>) => r.technologies)
+        .filter((t): t is Technology => !!t && (t as Technology).published === true)
+    } catch (e) {
+      console.error("[TechnologyService.getRelatedTechnologies]", e)
       return []
     }
   },
@@ -88,14 +84,18 @@ export const TechnologyService = {
       const supabase = await createServiceClient()
       const { data, error } = await supabase
         .from("technologies")
-        .select("*")
+        .select("id,slug,name,tagline,description,type,icon_url,logo_url,status,difficulty,popularity_score,trending_score,featured,verified,created_at,updated_at")
         .eq("published", true)
         .order("trending_score", { ascending: false })
         .limit(limit)
 
-      if (error || !data) return []
+      if (error || !data) {
+        console.error("[TechnologyService.getTrendingTechnologies]", error?.message)
+        return []
+      }
       return data as Technology[]
-    } catch {
+    } catch (e) {
+      console.error("[TechnologyService.getTrendingTechnologies]", e)
       return []
     }
   },
@@ -105,15 +105,19 @@ export const TechnologyService = {
       const supabase = await createServiceClient()
       const { data, error } = await supabase
         .from("technologies")
-        .select("*")
+        .select("id,slug,name,tagline,description,type,icon_url,logo_url,status,difficulty,popularity_score,trending_score,featured,verified,created_at,updated_at")
         .eq("published", true)
         .eq("featured", true)
         .order("popularity_score", { ascending: false })
         .limit(limit)
 
-      if (error || !data) return []
+      if (error || !data) {
+        console.error("[TechnologyService.getFeaturedTechnologies]", error?.message)
+        return []
+      }
       return data as Technology[]
-    } catch {
+    } catch (e) {
+      console.error("[TechnologyService.getFeaturedTechnologies]", e)
       return []
     }
   },

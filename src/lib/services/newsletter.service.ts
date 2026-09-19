@@ -1,5 +1,6 @@
-import { createServiceClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
 
+// newsletter_subscribers has no public RLS policies — must use service-role admin client.
 export const NewsletterService = {
   async subscribe(data: {
     email: string
@@ -8,13 +9,13 @@ export const NewsletterService = {
     source?: string
   }): Promise<{ success: boolean; error?: string }> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAdminClient()
+      const email = data.email.toLowerCase().trim()
 
-      // Check for bounced status first
       const { data: existing } = await supabase
         .from("newsletter_subscribers")
         .select("status")
-        .eq("email", data.email.toLowerCase().trim())
+        .eq("email", email)
         .single()
 
       if (existing?.status === "bounced") {
@@ -26,7 +27,7 @@ export const NewsletterService = {
 
       const { error } = await supabase.from("newsletter_subscribers").upsert(
         {
-          email: data.email.toLowerCase().trim(),
+          email,
           first_name: data.firstName ?? null,
           topics: data.topics ?? [],
           source: data.source ?? "website",
@@ -37,23 +38,29 @@ export const NewsletterService = {
         { onConflict: "email" }
       )
 
-      if (error) return { success: false, error: "Failed to subscribe. Please try again." }
+      if (error) {
+        console.error("[NewsletterService.subscribe] DB error:", error.message)
+        return { success: false, error: "Failed to subscribe. Please try again." }
+      }
       return { success: true }
-    } catch {
+    } catch (e) {
+      console.error("[NewsletterService.subscribe] Unexpected error:", e)
       return { success: false, error: "An unexpected error occurred." }
     }
   },
 
   async unsubscribe(email: string): Promise<{ success: boolean }> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAdminClient()
       const { error } = await supabase
         .from("newsletter_subscribers")
         .update({ status: "unsubscribed" })
         .eq("email", email.toLowerCase().trim())
 
+      if (error) console.error("[NewsletterService.unsubscribe] DB error:", error.message)
       return { success: !error }
-    } catch {
+    } catch (e) {
+      console.error("[NewsletterService.unsubscribe] Unexpected error:", e)
       return { success: false }
     }
   },

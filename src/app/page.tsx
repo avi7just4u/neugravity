@@ -1,3 +1,6 @@
+// Revalidate every 60 seconds — ISR keeps homepage fresh without full SSR on every request
+export const revalidate = 60
+
 import Link from "next/link"
 import {
   ArrowRight,

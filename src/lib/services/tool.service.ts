@@ -18,7 +18,7 @@ export const ToolService = {
       const supabase = await createServiceClient()
       let query = supabase
         .from("tools")
-        .select("*", { count: "exact" })
+        .select("id,slug,name,tagline,description,icon_url,logo_url,website_url,category_id,company_id,tool_type,pricing_model,has_free_tier,has_api,enterprise_available,status,featured,trending_score,popularity_score,rating_average,rating_count,created_at,updated_at", { count: "exact" })
         .eq("published", true)
         .order("popularity_score", { ascending: false })
         .range(from, to)
@@ -63,28 +63,31 @@ export const ToolService = {
   async getAlternativeTools(toolId: string, limit = 6): Promise<Tool[]> {
     try {
       const supabase = await createServiceClient()
-
-      // Get category of current tool
-      const { data: tool } = await supabase
+      // Single query: join on category to avoid two round-trips
+      const { data: self } = await supabase
         .from("tools")
         .select("category_id")
         .eq("id", toolId)
         .single()
 
-      if (!tool?.category_id) return []
+      if (!self?.category_id) return []
 
       const { data, error } = await supabase
         .from("tools")
-        .select("*")
+        .select("id,slug,name,tagline,icon_url,logo_url,tool_type,pricing_model,has_free_tier,rating_average,rating_count,popularity_score,featured")
         .eq("published", true)
-        .eq("category_id", tool.category_id)
+        .eq("category_id", self.category_id)
         .neq("id", toolId)
         .order("popularity_score", { ascending: false })
         .limit(limit)
 
-      if (error || !data) return []
+      if (error || !data) {
+        console.error("[ToolService.getAlternativeTools]", error?.message)
+        return []
+      }
       return data as Tool[]
-    } catch {
+    } catch (e) {
+      console.error("[ToolService.getAlternativeTools]", e)
       return []
     }
   },
@@ -94,15 +97,19 @@ export const ToolService = {
       const supabase = await createServiceClient()
       const { data, error } = await supabase
         .from("tools")
-        .select("*")
+        .select("id,slug,name,tagline,icon_url,logo_url,tool_type,pricing_model,has_free_tier,rating_average,rating_count,popularity_score,trending_score,featured")
         .eq("published", true)
         .eq("featured", true)
         .order("popularity_score", { ascending: false })
         .limit(limit)
 
-      if (error || !data) return []
+      if (error || !data) {
+        console.error("[ToolService.getFeaturedTools]", error?.message)
+        return []
+      }
       return data as Tool[]
-    } catch {
+    } catch (e) {
+      console.error("[ToolService.getFeaturedTools]", e)
       return []
     }
   },

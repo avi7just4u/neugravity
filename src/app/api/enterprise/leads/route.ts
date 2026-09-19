@@ -34,9 +34,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createAdminClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from("enterprise_leads").insert(parsed.data)
+    const supabase = createAdminClient()
+    const { error } = await supabase.from("enterprise_leads").insert(parsed.data)
 
     if (error) throw error
 

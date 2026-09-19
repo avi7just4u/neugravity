@@ -1,4 +1,7 @@
-import { createServiceClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
+
+// analytics_events: anon INSERT allowed via RLS policy added in migration 003.
+// We still use admin client here so analytics works even if user has no active session.
 
 export const AnalyticsService = {
   async track(event: {
@@ -12,7 +15,7 @@ export const AnalyticsService = {
   }): Promise<void> {
     // Fire-and-forget — never propagate errors to callers
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAdminClient()
       await supabase.from("analytics_events").insert({
         event_type: event.type,
         session_id: event.sessionId ?? null,

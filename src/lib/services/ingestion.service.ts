@@ -7,7 +7,7 @@ export const IngestionService = {
     payload: Record<string, unknown>,
     opts?: { priority?: number; createdBy?: string }
   ): Promise<string> {
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
     const { data, error } = await supabase
       .from("ingestion_jobs")
       .insert({
@@ -28,7 +28,7 @@ export const IngestionService = {
 
   async getJob(id: string): Promise<IngestionJob | null> {
     try {
-      const supabase = await createAdminClient()
+      const supabase = createAdminClient()
       const { data, error } = await supabase
         .from("ingestion_jobs")
         .select("*")
@@ -44,7 +44,7 @@ export const IngestionService = {
 
   async getPendingJobs(limit = 50): Promise<IngestionJob[]> {
     try {
-      const supabase = await createAdminClient()
+      const supabase = createAdminClient()
       const { data, error } = await supabase
         .from("ingestion_jobs")
         .select("*")
@@ -61,7 +61,7 @@ export const IngestionService = {
   },
 
   async markJobRunning(id: string): Promise<void> {
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
     await supabase
       .from("ingestion_jobs")
       .update({ status: "running", started_at: new Date().toISOString() })
@@ -69,7 +69,7 @@ export const IngestionService = {
   },
 
   async markJobCompleted(id: string): Promise<void> {
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
     await supabase
       .from("ingestion_jobs")
       .update({ status: "completed", completed_at: new Date().toISOString() })
@@ -77,7 +77,7 @@ export const IngestionService = {
   },
 
   async markJobFailed(id: string, error: string, details?: unknown): Promise<void> {
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
 
     // Check attempt count to decide if dead letter
     const { data: job } = await supabase
@@ -103,7 +103,7 @@ export const IngestionService = {
   },
 
   async retryJob(id: string): Promise<void> {
-    const supabase = await createAdminClient()
+    const supabase = createAdminClient()
     await supabase
       .from("ingestion_jobs")
       .update({

@@ -17,7 +17,7 @@ export const ContentService = {
       const supabase = await createServiceClient()
       let query = supabase
         .from("articles")
-        .select("*", { count: "exact" })
+        .select("id,slug,title,subtitle,excerpt,hero_image_url,author_id,category_id,status,published_at,reading_time_minutes,featured,view_count,share_count,created_at,updated_at", { count: "exact" })
         .eq("status", "published")
         .order("published_at", { ascending: false })
         .range(from, to)
@@ -26,7 +26,10 @@ export const ContentService = {
       if (featured !== undefined) query = query.eq("featured", featured)
 
       const { data, count, error } = await query
-      if (error) return { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
+      if (error) {
+        console.error("[ContentService.getPublishedArticles]", error.message)
+        return { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
+      }
 
       return {
         data: (data ?? []) as Article[],
@@ -35,7 +38,8 @@ export const ContentService = {
         per_page: perPage,
         total_pages: Math.ceil((count ?? 0) / perPage),
       }
-    } catch {
+    } catch (e) {
+      console.error("[ContentService.getPublishedArticles]", e)
       return { data: [], total: 0, page, per_page: perPage, total_pages: 0 }
     }
   },
@@ -72,7 +76,7 @@ export const ContentService = {
       const supabase = await createServiceClient()
       let query = supabase
         .from("news_items")
-        .select("*", { count: "exact" })
+        .select("id,slug,headline,summary,hero_image_url,author_id,cluster_id,category_id,status,importance,published_at,view_count,featured,created_at,updated_at", { count: "exact" })
         .eq("status", "published")
         .order("published_at", { ascending: false })
         .range(from, to)
@@ -119,14 +123,14 @@ export const ContentService = {
       const [articlesResult, newsResult] = await Promise.all([
         supabase
           .from("articles")
-          .select("*")
+          .select("id,slug,title,excerpt,hero_image_url,author_id,category_id,published_at,reading_time_minutes,featured,view_count")
           .eq("status", "published")
           .eq("featured", true)
           .order("published_at", { ascending: false })
           .limit(6),
         supabase
           .from("news_items")
-          .select("*")
+          .select("id,slug,headline,summary,hero_image_url,author_id,category_id,published_at,importance,featured,view_count")
           .eq("status", "published")
           .eq("featured", true)
           .order("published_at", { ascending: false })

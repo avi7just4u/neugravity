@@ -1,3 +1,5 @@
+export const revalidate = 300 // 5 minutes
+
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
