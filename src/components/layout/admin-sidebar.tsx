@@ -21,6 +21,9 @@ import {
   Zap,
   BookOpen,
   Mic2,
+  RefreshCw,
+  GitCompareArrows,
+  Bell,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -49,6 +52,7 @@ const navGroups: NavGroup[] = [
       { label: "Articles", href: "/admin/content/articles", icon: <FileText className="h-4 w-4" /> },
       { label: "News", href: "/admin/content/news", icon: <Newspaper className="h-4 w-4" /> },
       { label: "Tools", href: "/admin/content/tools", icon: <Wrench className="h-4 w-4" /> },
+      { label: "Tool Changes", href: "/admin/content/tools/changes", icon: <GitCompareArrows className="h-4 w-4" /> },
       { label: "Companies", href: "/admin/content/companies", icon: <Building2 className="h-4 w-4" /> },
       { label: "Technologies", href: "/admin/content/technologies", icon: <Cpu className="h-4 w-4" /> },
       { label: "Comparisons", href: "/admin/content/comparisons", icon: <BarChart3 className="h-4 w-4" /> },
@@ -93,6 +97,8 @@ const navGroups: NavGroup[] = [
     title: "System",
     items: [
       { label: "Jobs", href: "/admin/system/jobs", icon: <BriefcaseBusiness className="h-4 w-4" /> },
+      { label: "Notifications", href: "/admin/system/notifications", icon: <Bell className="h-4 w-4" /> },
+      { label: "Freshness", href: "/admin/freshness", icon: <RefreshCw className="h-4 w-4" /> },
       { label: "Health", href: "/admin/system/health", icon: <AlertCircle className="h-4 w-4" /> },
       { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" /> },
     ],

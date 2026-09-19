@@ -104,17 +104,26 @@ export default async function EditorialPage({
                       {formatRelative(item.discovered_at as string | null)}
                     </span>
                   </div>
-                  <a
-                    href={item.url as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 group"
-                  >
-                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors line-clamp-2">
-                      {(item.title as string) || "(no title)"}
-                    </h3>
-                    <ExternalLink className="h-3 w-3 text-zinc-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/admin/editorial/news/${item.id as string}`}
+                      className="flex items-center gap-1 group flex-1 min-w-0"
+                    >
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors line-clamp-2">
+                        {(item.title as string) || "(no title)"}
+                      </h3>
+                    </Link>
+                    {Boolean(item.url) && (
+                      <a
+                        href={item.url as string}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
                   {Boolean(item.description) && (
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">
                       {String(item.description)}

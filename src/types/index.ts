@@ -727,3 +727,25 @@ export interface Notification {
   read_at: string | null
   created_at: string
 }
+
+export interface NotificationRule {
+  id: string
+  name: string
+  event_type: string
+  conditions: Record<string, unknown>
+  channels: string[]
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface StatusUpdate {
+  id: string
+  incident_id: string
+  external_update_id: string | null
+  status: string
+  message: string
+  published_at: string | null
+  raw_payload: Record<string, unknown> | null
+  created_at: string
+}
