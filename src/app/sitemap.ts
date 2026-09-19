@@ -1,6 +1,15 @@
 import type { MetadataRoute } from "next"
+import { TechnologyService } from "@/lib/services/technology.service"
+import { ToolService } from "@/lib/services/tool.service"
+import { ContentService } from "@/lib/services/content.service"
+import { CompanyService } from "@/lib/services/company.service"
+import { ComparisonService } from "@/lib/services/comparison.service"
+import { CourseService } from "@/lib/services/course.service"
+import { InterviewService } from "@/lib/services/interview.service"
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+
+export const revalidate = 3600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -24,9 +33,82 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/terms`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
   ]
 
-  // Future: fetch dynamic routes from DB and append
-  // const technologies = await TechnologyService.getTechnologies({ page: 1, perPage: 1000 })
-  // const techRoutes = technologies.data.map(t => ({ url: `${siteUrl}/tech/${t.slug}`, ... }))
+  const [techData, toolData, newsData, articleData, companyData, comparisonData, courseData, interviewData] =
+    await Promise.allSettled([
+      TechnologyService.getTechnologies({ perPage: 500 }),
+      ToolService.getTools({ perPage: 500 }),
+      ContentService.getPublishedNews({ perPage: 500 }),
+      ContentService.getPublishedArticles({ perPage: 500 }),
+      CompanyService.getCompanies({ perPage: 500 }),
+      ComparisonService.getComparisons({ perPage: 500 }),
+      CourseService.getCourses({ perPage: 500 }),
+      InterviewService.getPublishedInterviews({ perPage: 500 }),
+    ])
 
-  return staticRoutes
+  const dynamicRoutes: MetadataRoute.Sitemap = []
+
+  if (techData.status === "fulfilled") {
+    for (const t of techData.value.data) {
+      dynamicRoutes.push({ url: `${siteUrl}/tech/${t.slug}`, changeFrequency: "weekly", priority: 0.7 })
+    }
+  }
+
+  if (toolData.status === "fulfilled") {
+    for (const t of toolData.value.data) {
+      dynamicRoutes.push({ url: `${siteUrl}/tools/${t.slug}`, changeFrequency: "weekly", priority: 0.7 })
+    }
+  }
+
+  if (newsData.status === "fulfilled") {
+    for (const n of newsData.value.data) {
+      dynamicRoutes.push({
+        url: `${siteUrl}/news/${n.slug}`,
+        lastModified: n.published_at ? new Date(n.published_at) : undefined,
+        changeFrequency: "monthly",
+        priority: 0.6,
+      })
+    }
+  }
+
+  if (articleData.status === "fulfilled") {
+    for (const a of articleData.value.data) {
+      dynamicRoutes.push({
+        url: `${siteUrl}/articles/${a.slug}`,
+        lastModified: a.published_at ? new Date(a.published_at) : undefined,
+        changeFrequency: "monthly",
+        priority: 0.7,
+      })
+    }
+  }
+
+  if (companyData.status === "fulfilled") {
+    for (const c of companyData.value.data) {
+      dynamicRoutes.push({ url: `${siteUrl}/companies/${c.slug}`, changeFrequency: "weekly", priority: 0.6 })
+    }
+  }
+
+  if (comparisonData.status === "fulfilled") {
+    for (const c of comparisonData.value.data) {
+      dynamicRoutes.push({ url: `${siteUrl}/compare/${c.slug}`, changeFrequency: "weekly", priority: 0.7 })
+    }
+  }
+
+  if (courseData.status === "fulfilled") {
+    for (const c of courseData.value.data) {
+      dynamicRoutes.push({ url: `${siteUrl}/courses/${c.slug}`, changeFrequency: "weekly", priority: 0.6 })
+    }
+  }
+
+  if (interviewData.status === "fulfilled") {
+    for (const i of interviewData.value.data) {
+      dynamicRoutes.push({
+        url: `${siteUrl}/interviews/${i.slug}`,
+        lastModified: i.published_at ? new Date(i.published_at) : undefined,
+        changeFrequency: "monthly",
+        priority: 0.6,
+      })
+    }
+  }
+
+  return [...staticRoutes, ...dynamicRoutes]
 }
