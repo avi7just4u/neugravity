@@ -1,0 +1,28 @@
+import type { MetadataRoute } from "next"
+
+export default function robots(): MetadataRoute.Robots {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+
+  return {
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/admin/", "/api/", "/login", "/signup"],
+      },
+      // Allow major search crawlers full access
+      {
+        userAgent: ["Googlebot", "Bingbot", "Slurp", "DuckDuckBot"],
+        allow: "/",
+        disallow: ["/admin/", "/api/"],
+      },
+      // AI crawlers — currently allowed for discovery; revisit per policy
+      {
+        userAgent: ["GPTBot", "ClaudeBot", "Amazonbot", "anthropic-ai"],
+        allow: "/",
+        disallow: ["/admin/", "/api/"],
+      },
+    ],
+    sitemap: `${siteUrl}/sitemap.xml`,
+  }
+}

@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NeuGravity
+
+**Understand Technology. Navigate What's Next.**
+
+A production-grade technology intelligence and learning platform. Think YouTube + tech knowledge graph + tech news + learning + software discovery + comparison engine + enterprise advisory.
+
+## Stack
+
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS v4**
+- **Supabase** (PostgreSQL + Auth + Storage)
+- **Radix UI** + **Lucide React**
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your Supabase project credentials:
+- `NEXT_PUBLIC_SUPABASE_URL` — from Supabase project settings
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — from Supabase project settings
+- `SUPABASE_SERVICE_ROLE_KEY` — from Supabase project settings (server-only, never expose)
+- `DATABASE_URL` — PostgreSQL connection string (for direct DB access)
+
+### 3. Run database migrations
+
+In your Supabase SQL editor or via `psql`, run migrations in order:
+
+```sql
+-- Run these against your Supabase project
+\i database/migrations/001_initial_schema.sql
+\i database/migrations/002_seed_data.sql
+```
+
+### 4. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+  app/                  # Next.js App Router pages + API routes
+    admin/              # Admin panel (auth-gated, role-based)
+    api/                # API routes (auth, newsletter, enterprise, search, analytics, contact)
+    (public pages)      # tech, tools, companies, news, compare, articles, learn, courses...
+  components/
+    layout/             # Navbar, Footer, AdminSidebar
+    ui/                 # Design system components (Button, Badge, Card, etc.)
+  lib/
+    services/           # Service layer (never call Supabase from UI directly)
+    search/             # ISearchService abstraction
+    supabase/           # Client, server, middleware helpers
+    utils.ts            # cn(), formatDate(), generateSlug(), etc.
+  types/
+    index.ts            # All TypeScript types
+    database.ts         # Supabase Database interface
+database/
+  migrations/           # SQL migration files
+docs/
+  architecture.md       # System design
+  database.md           # Table reference
+```
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+```
+UI Component → Service → Repository → Supabase
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+See `docs/architecture.md` for full design documentation.
+See `CLAUDE.md` for development conventions.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Phase Status
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `PROJECT_STATUS.md` for current completion status.
