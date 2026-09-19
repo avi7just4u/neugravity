@@ -10,18 +10,17 @@ import {
   Building2,
   Cpu,
   BarChart3,
-  Mic2,
-  BookOpen,
   Rss,
   ListChecks,
   BriefcaseBusiness,
   MessageSquare,
-  ShoppingCart,
   Users,
   Search,
   Settings,
   AlertCircle,
   Zap,
+  BookOpen,
+  Mic2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -58,17 +57,17 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: "Ingestion",
+    title: "Editorial",
     items: [
-      { label: "Sources", href: "/admin/ingestion/sources", icon: <Rss className="h-4 w-4" /> },
-      { label: "Candidates", href: "/admin/ingestion/candidates", icon: <ListChecks className="h-4 w-4" /> },
-      { label: "Jobs", href: "/admin/ingestion/jobs", icon: <BriefcaseBusiness className="h-4 w-4" /> },
+      { label: "Queue", href: "/admin/editorial", icon: <ListChecks className="h-4 w-4" /> },
+      { label: "Review", href: "/admin/editorial/review", icon: <FileText className="h-4 w-4" /> },
     ],
   },
   {
-    title: "Editorial",
+    title: "Sources",
     items: [
-      { label: "Review Queue", href: "/admin/editorial/review", icon: <ListChecks className="h-4 w-4" /> },
+      { label: "All Sources", href: "/admin/sources", icon: <Rss className="h-4 w-4" /> },
+      { label: "Add Source", href: "/admin/sources/new", icon: <ListChecks className="h-4 w-4" /> },
     ],
   },
   {
@@ -78,32 +77,22 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: "Commerce",
-    items: [
-      { label: "Orders", href: "/admin/commerce/orders", icon: <ShoppingCart className="h-4 w-4" /> },
-    ],
-  },
-  {
     title: "Users",
     items: [
       { label: "Users", href: "/admin/users", icon: <Users className="h-4 w-4" /> },
     ],
   },
   {
-    title: "SEO",
-    items: [
-      { label: "Redirects", href: "/admin/seo/redirects", icon: <Search className="h-4 w-4" /> },
-    ],
-  },
-  {
     title: "Analytics",
     items: [
       { label: "Overview", href: "/admin/analytics", icon: <BarChart3 className="h-4 w-4" /> },
+      { label: "Search", href: "/admin/seo/redirects", icon: <Search className="h-4 w-4" /> },
     ],
   },
   {
     title: "System",
     items: [
+      { label: "Jobs", href: "/admin/system/jobs", icon: <BriefcaseBusiness className="h-4 w-4" /> },
       { label: "Health", href: "/admin/system/health", icon: <AlertCircle className="h-4 w-4" /> },
       { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" /> },
     ],

@@ -304,14 +304,27 @@ export interface Source {
   id: string
   name: string
   domain: string
-  source_type: "official_company" | "official_blog" | "rss" | "api" | "news" | "youtube" | "manual" | "community"
+  source_type: "official_company" | "official_blog" | "rss" | "api" | "news" | "youtube" | "manual" | "community" | "status" | "graphql"
+  base_url: string | null
+  feed_url: string | null
   rss_url: string | null
+  api_url: string | null
   api_endpoint: string | null
+  parser_key: string | null
   feed_enabled: boolean
   trust_level: number
   active: boolean
   last_fetched_at: string | null
   fetch_frequency_minutes: number
+  poll_interval_seconds: number
+  last_polled_at: string | null
+  next_poll_at: string | null
+  last_success_at: string | null
+  last_error_at: string | null
+  last_error: string | null
+  failure_count: number
+  items_discovered: number
+  health_status: "healthy" | "warning" | "failed" | "disabled" | "unknown"
   robots_status: string
   notes: string | null
   created_at: string
@@ -602,5 +615,115 @@ export interface Revision {
   snapshot: Record<string, unknown>
   change_summary: string | null
   created_by: string | null
+  created_at: string
+}
+
+
+// Phase 3 types
+
+export interface Job {
+  id: string
+  queue_name: string
+  job_type: string
+  payload: Record<string, unknown>
+  status: "queued" | "running" | "completed" | "retrying" | "failed" | "dead_lettered" | "cancelled"
+  priority: number
+  attempts: number
+  max_attempts: number
+  idempotency_key: string | null
+  scheduled_at: string
+  started_at: string | null
+  completed_at: string | null
+  failed_at: string | null
+  error_code: string | null
+  error_message: string | null
+  last_error: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface JobAttempt {
+  id: string
+  job_id: string
+  attempt_number: number
+  started_at: string
+  completed_at: string | null
+  status: "running" | "completed" | "failed"
+  error: string | null
+  metadata: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface SourceItem {
+  id: string
+  source_id: string
+  external_id: string | null
+  raw_url: string | null
+  canonical_url: string | null
+  title: string | null
+  description: string | null
+  content: string | null
+  author: string | null
+  content_hash: string | null
+  raw_content: string | null
+  source_published_at: string | null
+  content_type: "news" | "tool" | "technology" | "company" | "interview" | "article" | "status" | "other"
+  processing_status: "discovered" | "normalized" | "duplicate" | "enriching" | "ready_for_review" | "processed" | "failed"
+  raw_payload: Record<string, unknown> | null
+  metadata: Record<string, unknown> | null
+  discovered_at: string
+  duplicate_of: string | null
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ToolChangeEvent {
+  id: string
+  tool_id: string
+  field_name: string
+  old_value: string | null
+  new_value: string | null
+  source_id: string | null
+  detected_at: string
+  verified_at: string | null
+  verification_status: "pending" | "verified" | "rejected" | "auto_accepted"
+  verified_by: string | null
+  auto_applied: boolean
+  created_at: string
+}
+
+export interface RefreshPolicy {
+  id: string
+  entity_type: string
+  field_group: string
+  refresh_interval_seconds: number
+  priority: number
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ContentRevision {
+  id: string
+  content_type: string
+  content_id: string
+  version: number
+  snapshot: Record<string, unknown>
+  change_summary: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface Notification {
+  id: string
+  rule_id: string | null
+  user_id: string
+  title: string
+  body: string | null
+  event_type: string
+  entity_type: string | null
+  entity_id: string | null
+  read_at: string | null
   created_at: string
 }

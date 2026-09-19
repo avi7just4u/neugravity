@@ -1,117 +1,103 @@
 import { createAdminClient } from "@/lib/supabase/server"
-import type { IngestionJob } from "@/types"
+import { getConnector } from "@/lib/connectors"
+import type { NormalizedItem } from "@/lib/connectors"
+import { SourceService } from "./source.service"
+import { JobService } from "./job.service"
 
 export const IngestionService = {
-  async createJob(
-    type: string,
-    payload: Record<string, unknown>,
-    opts?: { priority?: number; createdBy?: string }
-  ): Promise<string> {
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-      .from("ingestion_jobs")
-      .insert({
-        type,
-        payload,
-        priority: opts?.priority ?? 5,
-        created_by: opts?.createdBy ?? null,
-        status: "pending",
-        attempts: 0,
-        max_attempts: 3,
-      })
-      .select("id")
-      .single()
+  async processSource(source_id: string): Promise<{
+    discovered: number
+    duplicates: number
+    queued: number
+    errors: string[]
+  }> {
+    const errors: string[] = []
+    const source = await SourceService.getSourceById(source_id)
+    if (!source) return { discovered: 0, duplicates: 0, queued: 0, errors: ["Source not found"] }
 
-    if (error || !data) throw new Error(`Failed to create job: ${error?.message}`)
-    return data.id
-  },
+    const connector = getConnector(source.parser_key)
+    let items: NormalizedItem[] = []
 
-  async getJob(id: string): Promise<IngestionJob | null> {
     try {
-      const supabase = createAdminClient()
-      const { data, error } = await supabase
-        .from("ingestion_jobs")
-        .select("*")
-        .eq("id", id)
-        .single()
-
-      if (error || !data) return null
-      return data as IngestionJob
-    } catch {
-      return null
+      items = await connector.discover(source)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      await SourceService.recordFailure(source_id, msg)
+      return { discovered: 0, duplicates: 0, queued: 0, errors: [msg] }
     }
-  },
 
-  async getPendingJobs(limit = 50): Promise<IngestionJob[]> {
-    try {
-      const supabase = createAdminClient()
-      const { data, error } = await supabase
-        .from("ingestion_jobs")
-        .select("*")
-        .eq("status", "pending")
-        .order("priority", { ascending: false })
-        .order("created_at", { ascending: true })
-        .limit(limit)
+    let duplicates = 0
+    let queued = 0
 
-      if (error || !data) return []
-      return data as IngestionJob[]
-    } catch {
-      return []
+    for (const item of items) {
+      try {
+        const { isDuplicate, item: saved } = await SourceService.upsertSourceItem({
+          source_id,
+          external_id: item.external_id,
+          canonical_url: item.canonical_url,
+          title: item.title,
+          description: item.description ?? null,
+          content: item.content ?? null,
+          author: item.author ?? null,
+          source_published_at: item.source_published_at?.toISOString() ?? null,
+          content_type: item.content_type,
+          raw_payload: item.raw_payload,
+          metadata: item.metadata ?? null,
+        })
+
+        if (isDuplicate) {
+          duplicates++
+        } else {
+          await this.enqueueEnrichment(saved.id)
+          queued++
+        }
+      } catch (err) {
+        errors.push(err instanceof Error ? err.message : String(err))
+      }
     }
+
+    await SourceService.recordSuccess(source_id, items.length - duplicates)
+    return { discovered: items.length, duplicates, queued, errors }
   },
 
-  async markJobRunning(id: string): Promise<void> {
-    const supabase = createAdminClient()
-    await supabase
-      .from("ingestion_jobs")
-      .update({ status: "running", started_at: new Date().toISOString() })
-      .eq("id", id)
+  async checkDuplicate(
+    item: NormalizedItem,
+    source_id: string
+  ): Promise<{ isDuplicate: boolean; existingId?: string }> {
+    const db = createAdminClient()
+
+    if (item.canonical_url) {
+      const { data } = await db
+        .from("source_items")
+        .select("id")
+        .eq("canonical_url", item.canonical_url)
+        .neq("source_id", source_id)
+        .limit(1)
+        .maybeSingle()
+      if (data) return { isDuplicate: true, existingId: data.id }
+    }
+
+    if (item.external_id) {
+      const { data } = await db
+        .from("source_items")
+        .select("id")
+        .eq("source_id", source_id)
+        .eq("external_id", item.external_id)
+        .limit(1)
+        .maybeSingle()
+      if (data) return { isDuplicate: true, existingId: data.id }
+    }
+
+    return { isDuplicate: false }
   },
 
-  async markJobCompleted(id: string): Promise<void> {
-    const supabase = createAdminClient()
-    await supabase
-      .from("ingestion_jobs")
-      .update({ status: "completed", completed_at: new Date().toISOString() })
-      .eq("id", id)
-  },
-
-  async markJobFailed(id: string, error: string, details?: unknown): Promise<void> {
-    const supabase = createAdminClient()
-
-    // Check attempt count to decide if dead letter
-    const { data: job } = await supabase
-      .from("ingestion_jobs")
-      .select("attempts, max_attempts")
-      .eq("id", id)
-      .single()
-
-    const attempts = (job?.attempts ?? 0) + 1
-    const isDead = attempts >= (job?.max_attempts ?? 3)
-
-    const retryAt = isDead
-      ? null
-      : new Date(Date.now() + Math.pow(2, attempts) * 60_000).toISOString() // exponential backoff
-
-    await supabase.from("ingestion_jobs").update({
-      status: isDead ? "dead_letter" : "retrying",
-      attempts,
-      error_message: error,
-      error_details: details ? (details as Record<string, unknown>) : null,
-      next_retry_at: retryAt,
-    }).eq("id", id)
-  },
-
-  async retryJob(id: string): Promise<void> {
-    const supabase = createAdminClient()
-    await supabase
-      .from("ingestion_jobs")
-      .update({
-        status: "pending",
-        next_retry_at: null,
-        error_message: null,
-        error_details: null,
-      })
-      .eq("id", id)
+  async enqueueEnrichment(source_item_id: string): Promise<void> {
+    await JobService.enqueue({
+      queue_name: "content-enrichment",
+      job_type: "ENRICH_SOURCE_ITEM",
+      payload: { source_item_id },
+      priority: 5,
+      idempotency_key: `enrich:${source_item_id}`,
+    })
   },
 }
