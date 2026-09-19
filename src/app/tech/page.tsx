@@ -1,31 +1,16 @@
-export const revalidate = 300 // 5 minutes
+export const revalidate = 300
 
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Cpu, ArrowRight } from "lucide-react"
+import { TechnologyService } from "@/lib/services/technology.service"
+import type { Technology, TechnologyType } from "@/types"
 
 export const metadata: Metadata = {
   title: "Technology",
   description: "Explore the technologies shaping how we build and work.",
 }
-
-const demoTechnologies = [
-  { name: "Kubernetes", slug: "kubernetes", type: "platform", description: "Open-source container orchestration system for automating deployment, scaling, and management." },
-  { name: "Python", slug: "python", type: "language", description: "High-level, general-purpose programming language known for its simplicity and versatility." },
-  { name: "TypeScript", slug: "typescript", type: "language", description: "Strongly typed superset of JavaScript that compiles to plain JavaScript." },
-  { name: "PostgreSQL", slug: "postgresql", type: "database", description: "Powerful, open-source object-relational database system with proven reliability." },
-  { name: "React", slug: "react", type: "framework", description: "JavaScript library for building user interfaces with a component-based architecture." },
-  { name: "Docker", slug: "docker", type: "platform", description: "Platform for developing, shipping, and running applications in containers." },
-  { name: "Rust", slug: "rust", type: "language", description: "Systems programming language focused on safety, performance, and concurrency." },
-  { name: "GraphQL", slug: "graphql", type: "protocol", description: "Query language for APIs and runtime for executing those queries." },
-  { name: "Redis", slug: "redis", type: "database", description: "In-memory data structure store used as database, cache, and message broker." },
-  { name: "TensorFlow", slug: "tensorflow", type: "framework", description: "Open-source machine learning framework developed by Google Brain." },
-  { name: "Next.js", slug: "nextjs", type: "framework", description: "React framework for production — hybrid static & server rendering, routing, and more." },
-  { name: "Terraform", slug: "terraform", type: "platform", description: "Infrastructure as code tool for building, changing, and versioning infrastructure safely." },
-]
-
-const filters = ["All", "AI", "Languages", "Frameworks", "Databases", "Cloud", "Infrastructure"]
 
 const typeVariant: Record<string, "info" | "success" | "warning" | "secondary" | "outline"> = {
   language: "info",
@@ -33,9 +18,64 @@ const typeVariant: Record<string, "info" | "success" | "warning" | "secondary" |
   database: "warning",
   platform: "secondary",
   protocol: "outline",
+  cloud: "info",
+  ai: "success",
+  infrastructure: "warning",
+  concept: "outline",
+  tool: "secondary",
+  other: "outline",
 }
 
-export default function TechPage() {
+const filters: { label: string; value: TechnologyType | "all" }[] = [
+  { label: "All", value: "all" },
+  { label: "AI", value: "ai" },
+  { label: "Languages", value: "language" },
+  { label: "Frameworks", value: "framework" },
+  { label: "Databases", value: "database" },
+  { label: "Cloud", value: "cloud" },
+  { label: "Infrastructure", value: "infrastructure" },
+]
+
+function TechCard({ tech }: { tech: Technology }) {
+  return (
+    <Link
+      href={`/tech/${tech.slug}`}
+      className="group flex flex-col gap-3 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all"
+    >
+      <div className="flex items-center justify-between">
+        <Badge variant={typeVariant[tech.type] ?? "secondary"} className="text-xs capitalize">
+          {tech.type}
+        </Badge>
+        {tech.featured && <Badge variant="outline" className="text-xs">Featured</Badge>}
+      </div>
+      <div>
+        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          {tech.name}
+        </h2>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
+          {tech.tagline ?? tech.description ?? ""}
+        </p>
+      </div>
+      <span className="text-xs text-zinc-400 flex items-center gap-1 group-hover:text-blue-500 transition-colors">
+        Learn more <ArrowRight className="h-3 w-3" />
+      </span>
+    </Link>
+  )
+}
+
+export default async function TechPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>
+}) {
+  const { type } = await searchParams
+  const activeType = (type as TechnologyType | undefined) ?? undefined
+
+  const { data: technologies } = await TechnologyService.getTechnologies({
+    type: activeType,
+    perPage: 24,
+  })
+
   return (
     <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-10">
@@ -48,44 +88,36 @@ export default function TechPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-8">
-        {filters.map((f) => (
-          <button
-            key={f}
-            className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-              f === "All"
-                ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white"
-                : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
+        {filters.map((f) => {
+          const isActive = (f.value === "all" && !activeType) || f.value === activeType
+          return (
+            <Link
+              key={f.value}
+              href={f.value === "all" ? "/tech" : `/tech?type=${f.value}`}
+              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                isActive
+                  ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white"
+                  : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+              }`}
+            >
+              {f.label}
+            </Link>
+          )
+        })}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {demoTechnologies.map((tech) => (
-          <Link
-            key={tech.slug}
-            href={`/tech/${tech.slug}`}
-            className="group flex flex-col gap-3 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <Badge variant={typeVariant[tech.type] ?? "secondary"} className="text-xs capitalize">
-                {tech.type}
-              </Badge>
-            </div>
-            <div>
-              <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {tech.name}
-              </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">{tech.description}</p>
-            </div>
-            <span className="text-xs text-zinc-400 flex items-center gap-1 group-hover:text-blue-500 transition-colors">
-              Learn more <ArrowRight className="h-3 w-3" />
-            </span>
-          </Link>
-        ))}
-      </div>
+      {technologies.length === 0 ? (
+        <div className="py-24 text-center text-zinc-400">
+          <Cpu className="h-10 w-10 mx-auto mb-4 opacity-30" />
+          <p>No technologies found yet. Check back soon.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {technologies.map((tech) => (
+            <TechCard key={tech.id} tech={tech} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

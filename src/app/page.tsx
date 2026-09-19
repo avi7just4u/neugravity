@@ -14,7 +14,6 @@ import {
   Zap,
   Shield,
   Globe,
-
   Cloud,
   Code2,
   ChevronRight,
@@ -22,75 +21,14 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { TechnologyService } from "@/lib/services/technology.service"
+import { ContentService } from "@/lib/services/content.service"
+import { ToolService } from "@/lib/services/tool.service"
+import { ComparisonService } from "@/lib/services/comparison.service"
+import { formatRelativeDate } from "@/lib/utils"
 
-const trendingTechnologies = [
-  { name: "Model Context Protocol", slug: "model-context-protocol", type: "Protocol", trend: "+340%" },
-  { name: "Agentic AI", slug: "agentic-ai", type: "Concept", trend: "+280%" },
-  { name: "Vector Databases", slug: "vector-databases", type: "Database", trend: "+190%" },
-  { name: "Kubernetes", slug: "kubernetes", type: "Platform", trend: "+12%" },
-  { name: "TypeScript", slug: "typescript", type: "Language", trend: "+8%" },
-  { name: "Rust", slug: "rust", type: "Language", trend: "+22%" },
-]
-
-const latestNews = [
-  {
-    headline: "Anthropic releases Claude's Model Context Protocol as open standard",
-    slug: "anthropic-mcp-open-standard",
-    summary: "MCP enables AI models to securely connect with external tools and data sources through a standardized interface.",
-    category: "AI",
-    publishedAt: "2 hours ago",
-    importance: 9,
-  },
-  {
-    headline: "OpenAI announces real-time voice API for developers",
-    slug: "openai-realtime-voice-api",
-    summary: "",
-    category: "AI",
-    publishedAt: "5 hours ago",
-    importance: 8,
-  },
-  {
-    headline: "Google introduces Gemini 2.0 with multimodal capabilities",
-    slug: "google-gemini-2-multimodal",
-    summary: "",
-    category: "AI",
-    publishedAt: "1 day ago",
-    importance: 8,
-  },
-  {
-    headline: "Vercel releases v0 generative UI — a new era for frontend development",
-    slug: "vercel-v0-generative-ui",
-    summary: "",
-    category: "Tools",
-    publishedAt: "2 days ago",
-    importance: 7,
-  },
-]
-
-const featuredTools = [
-  { name: "Cursor", slug: "cursor", tagline: "The AI-first code editor", pricingModel: "freemium" },
-  { name: "Supabase", slug: "supabase", tagline: "The open source Firebase alternative", pricingModel: "freemium" },
-  { name: "Vercel", slug: "vercel", tagline: "Deploy web applications instantly", pricingModel: "freemium" },
-  { name: "Linear", slug: "linear", tagline: "Issue tracking for modern software teams", pricingModel: "freemium" },
-  { name: "GitHub Copilot", slug: "github-copilot", tagline: "Your AI pair programmer", pricingModel: "subscription" },
-  { name: "Cloudflare", slug: "cloudflare", tagline: "Build and secure applications globally", pricingModel: "freemium" },
-]
-
-const popularComparisons = [
-  { title: "ChatGPT vs Claude", slug: "chatgpt-vs-claude", views: "12.4k" },
-  { title: "AWS vs Azure vs GCP", slug: "aws-vs-azure-vs-gcp", views: "8.2k" },
-  { title: "React vs Next.js", slug: "react-vs-nextjs", views: "6.7k" },
-  { title: "Postgres vs MongoDB", slug: "postgres-vs-mongodb", views: "5.1k" },
-  { title: "Vercel vs Netlify", slug: "vercel-vs-netlify", views: "4.3k" },
-]
-
-const learningPaths = [
-  { title: "AI Engineer", slug: "ai-engineer", courses: 8, hours: 42, difficulty: "Intermediate" },
-  { title: "Cloud Architecture", slug: "cloud-architecture", courses: 6, hours: 34, difficulty: "Advanced" },
-  { title: "Full Stack Developer", slug: "full-stack-developer", courses: 10, hours: 60, difficulty: "Beginner" },
-]
-
-const techRadarItems = [
+// Static fallbacks shown when DB is not yet connected
+const RADAR_ITEMS = [
   { name: "AI Agents", status: "Adopt", description: "Production-ready for many use cases" },
   { name: "WebAssembly", status: "Trial", description: "Growing adoption in performance-critical apps" },
   { name: "Edge Computing", status: "Adopt", description: "Established for latency-sensitive workloads" },
@@ -107,7 +45,18 @@ function statusBadgeVariant(status: string): "success" | "info" | "warning" | "d
   return "secondary"
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [trendingTech, featuredNews, featuredTools, comparisons] = await Promise.all([
+    TechnologyService.getTrendingTechnologies(6),
+    ContentService.getPublishedNews({ perPage: 4, featured: true }),
+    ToolService.getFeaturedTools(6),
+    ComparisonService.getPopularComparisons(5),
+  ])
+
+  const latestNews = featuredNews.data.length > 0
+    ? featuredNews.data
+    : await ContentService.getPublishedNews({ perPage: 4 }).then(r => r.data)
+
   return (
     <div className="flex flex-col">
       {/* HERO */}
@@ -173,7 +122,10 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-            {trendingTechnologies.map((tech) => (
+            {trendingTech.length === 0 && (
+              <div className="col-span-6 py-8 text-center text-zinc-400 text-sm">No technologies yet — check back soon.</div>
+            )}
+            {trendingTech.map((tech) => (
               <Link
                 key={tech.slug}
                 href={`/tech/${tech.slug}`}
@@ -183,11 +135,13 @@ export default function HomePage() {
                   <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
                     <Cpu className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-medium text-green-600 dark:text-green-400">{tech.trend}</span>
+                  {tech.trending_score > 0 && (
+                    <span className="text-xs font-medium text-green-600 dark:text-green-400">#{tech.trending_score}</span>
+                  )}
                 </div>
                 <div>
                   <div className="font-medium text-sm text-zinc-900 dark:text-white leading-snug">{tech.name}</div>
-                  <div className="text-xs text-zinc-400">{tech.type}</div>
+                  <div className="text-xs text-zinc-400 capitalize">{tech.type ?? ""}</div>
                 </div>
               </Link>
             ))}
@@ -210,6 +164,9 @@ export default function HomePage() {
                 </Link>
               </div>
               <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {latestNews.length === 0 && (
+                  <p className="py-8 text-center text-sm text-zinc-400">No news yet — check back soon.</p>
+                )}
                 {latestNews.map((item, i) => (
                   <Link
                     key={item.slug}
@@ -217,11 +174,13 @@ export default function HomePage() {
                     className="group flex flex-col gap-1.5 py-4 first:pt-0"
                   >
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">{item.category}</Badge>
                       {item.importance >= 9 && <Badge variant="brand" className="text-xs">Breaking</Badge>}
-                      <span className="text-xs text-zinc-400 ml-auto flex items-center gap-1">
-                        <Clock className="h-3 w-3" />{item.publishedAt}
-                      </span>
+                      {item.importance >= 7 && item.importance < 9 && <Badge variant="warning" className="text-xs">Major</Badge>}
+                      {item.published_at && (
+                        <span className="text-xs text-zinc-400 ml-auto flex items-center gap-1">
+                          <Clock className="h-3 w-3" />{formatRelativeDate(item.published_at)}
+                        </span>
+                      )}
                     </div>
                     <h3 className={`font-semibold text-zinc-900 dark:text-white leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ${i === 0 ? "text-base" : "text-sm"}`}>
                       {item.headline}
@@ -244,6 +203,9 @@ export default function HomePage() {
                 </Link>
               </div>
               <div className="space-y-2">
+                {featuredTools.length === 0 && (
+                  <p className="py-4 text-center text-xs text-zinc-400">No tools yet — check back soon.</p>
+                )}
                 {featuredTools.map((tool) => (
                   <Link
                     key={tool.slug}
@@ -255,9 +217,11 @@ export default function HomePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm text-zinc-900 dark:text-white">{tool.name}</div>
-                      <div className="text-xs text-zinc-400 truncate">{tool.tagline}</div>
+                      <div className="text-xs text-zinc-400 truncate">{tool.tagline ?? tool.description ?? ""}</div>
                     </div>
-                    <Badge variant="outline" className="text-xs shrink-0">{tool.pricingModel}</Badge>
+                    {tool.pricing_model && (
+                      <Badge variant="outline" className="text-xs shrink-0 capitalize">{tool.pricing_model.replace("_", " ")}</Badge>
+                    )}
                   </Link>
                 ))}
               </div>
@@ -276,7 +240,7 @@ export default function HomePage() {
                 <h2 className="font-semibold text-zinc-900 dark:text-white">Technology Radar</h2>
               </div>
               <div className="space-y-2">
-                {techRadarItems.map((item) => (
+                {RADAR_ITEMS.map((item) => (
                   <div key={item.name} className="flex items-start gap-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
                     <Badge variant={statusBadgeVariant(item.status)} className="mt-0.5 shrink-0">{item.status}</Badge>
                     <div>
@@ -298,7 +262,10 @@ export default function HomePage() {
                 </Link>
               </div>
               <div className="space-y-2">
-                {popularComparisons.map((comp, i) => (
+                {comparisons.length === 0 && (
+                  <p className="py-4 text-center text-xs text-zinc-400">No comparisons yet — check back soon.</p>
+                )}
+                {comparisons.map((comp, i) => (
                   <Link
                     key={comp.slug}
                     href={`/compare/${comp.slug}`}
@@ -306,7 +273,9 @@ export default function HomePage() {
                   >
                     <span className="text-sm font-medium text-zinc-400 w-5 shrink-0">{i + 1}</span>
                     <span className="flex-1 font-medium text-sm text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{comp.title}</span>
-                    <span className="text-xs text-zinc-400 shrink-0">{comp.views}</span>
+                    {comp.view_count > 0 && (
+                      <span className="text-xs text-zinc-400 shrink-0">{comp.view_count.toLocaleString()}</span>
+                    )}
                     <ChevronRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-500 transition-colors" />
                   </Link>
                 ))}
@@ -329,7 +298,11 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {learningPaths.map((path) => (
+            {([
+              { title: "AI Engineer", slug: "ai-engineer", courses: 8, hours: 42, difficulty: "Intermediate" },
+              { title: "Cloud Architecture", slug: "cloud-architecture", courses: 6, hours: 34, difficulty: "Advanced" },
+              { title: "Full Stack Developer", slug: "full-stack-developer", courses: 10, hours: 60, difficulty: "Beginner" },
+            ] as const).map((path) => (
               <Link
                 key={path.slug}
                 href={`/learn/paths/${path.slug}`}

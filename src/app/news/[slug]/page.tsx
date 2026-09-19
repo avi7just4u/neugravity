@@ -1,35 +1,38 @@
+export const revalidate = 60
+
 import type { Metadata } from "next"
 import Link from "next/link"
+import { notFound } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
-import { Clock, ChevronRight, ExternalLink } from "lucide-react"
-
-function toTitleCase(s: string) { return s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) }
-
-const newsData: Record<string, { headline: string; category: string; publishedAt: string; summary: string; whatHappened: string; whyItMatters: string; whatToKnow: string; sources: { name: string; url: string }[]; tags: string[] }> = {
-  "anthropic-mcp-open-standard": {
-    headline: "Anthropic releases Claude's Model Context Protocol as open standard",
-    category: "AI", publishedAt: "September 19, 2026",
-    summary: "Anthropic has open-sourced the Model Context Protocol (MCP), a standard that allows AI models to securely connect with external tools and data sources.",
-    whatHappened: "Anthropic released the Model Context Protocol (MCP) as an open standard. MCP provides a standardized interface for AI models to interact with external data sources, tools, and services. The protocol handles authentication, data retrieval, and tool execution in a consistent way across different AI systems.",
-    whyItMatters: "Standardizing how AI connects to external tools is a significant step toward interoperability in the AI ecosystem. Rather than each AI provider building proprietary integrations, MCP allows any AI model to connect with any MCP-compatible tool. This could dramatically accelerate the development of AI-powered applications.",
-    whatToKnow: "MCP is now available as an open specification. Early adopters include developer tools companies building MCP server implementations. The protocol is already available in Claude desktop applications and the Claude API.",
-    sources: [{ name: "Anthropic Blog", url: "https://anthropic.com/news" }],
-    tags: ["AI", "MCP", "Open Source", "Anthropic", "Standards"],
-  },
-}
+import { Clock, ChevronRight } from "lucide-react"
+import { ContentService } from "@/lib/services/content.service"
+import { formatDate, formatRelativeDate } from "@/lib/utils"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const item = newsData[slug]
-  return { title: item?.headline ?? toTitleCase(slug), description: item?.summary }
+  const item = await ContentService.getNewsBySlug(slug)
+  if (!item) return {}
+  return {
+    title: item.seo_title ?? item.headline,
+    description: item.seo_description ?? item.summary ?? undefined,
+  }
 }
 
 export function generateStaticParams() { return [] }
 
+function importanceBadge(importance: number) {
+  if (importance >= 9) return <Badge variant="brand">Breaking</Badge>
+  if (importance >= 7) return <Badge variant="warning">Major</Badge>
+  return null
+}
+
 export default async function NewsDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const item = newsData[slug]
-  const headline = item?.headline ?? toTitleCase(slug)
+  const item = await ContentService.getNewsBySlug(slug)
+  if (!item) notFound()
+
+  // Fire-and-forget view count — do not await
+  ContentService.incrementViewCount("news_item", item.id)
 
   return (
     <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-8">
@@ -38,52 +41,40 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
         <ChevronRight className="h-3.5 w-3.5" />
         <Link href="/news" className="hover:text-zinc-900 dark:hover:text-white transition-colors">News</Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-zinc-600 dark:text-zinc-300 truncate max-w-xs">{headline}</span>
+        <span className="text-zinc-600 dark:text-zinc-300 truncate max-w-xs">{item.headline}</span>
       </nav>
 
       <div className="grid lg:grid-cols-3 gap-10">
         <article className="lg:col-span-2 space-y-6">
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Badge variant="secondary">{item?.category ?? "News"}</Badge>
-              <span className="text-xs text-zinc-400 flex items-center gap-1"><Clock className="h-3 w-3" />{item?.publishedAt ?? "Recent"}</span>
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              {importanceBadge(item.importance)}
+              {item.published_at && (
+                <span className="text-xs text-zinc-400 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {formatRelativeDate(item.published_at)}
+                  {" · "}
+                  {formatDate(item.published_at)}
+                </span>
+              )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white leading-tight mb-3">{headline}</h1>
-            {item?.summary && <p className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">{item.summary}</p>}
+            <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white leading-tight mb-3">
+              {item.headline}
+            </h1>
+            {item.summary && (
+              <p className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">
+                {item.summary}
+              </p>
+            )}
           </div>
 
-          {item ? (
-            <div className="space-y-6">
-              <section>
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-white mb-2">What Happened</h2>
-                <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">{item.whatHappened}</p>
-              </section>
-              <section>
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-white mb-2">Why It Matters</h2>
-                <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">{item.whyItMatters}</p>
-              </section>
-              <section>
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-white mb-2">What You Should Know</h2>
-                <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">{item.whatToKnow}</p>
-              </section>
-
-              {item.sources.length > 0 && (
-                <section className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                  <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">Sources</h2>
-                  <div className="space-y-1">
-                    {item.sources.map((s) => (
-                      <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                        <ExternalLink className="h-3.5 w-3.5" />{s.name}
-                      </a>
-                    ))}
-                  </div>
-                  <p className="text-xs text-zinc-400 mt-2">NeuGravity does not reproduce source article text. We create original summaries and commentary. Always refer to primary sources.</p>
-                </section>
-              )}
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                {item.tags.map((t) => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}
-              </div>
+          {item.body ? (
+            <div className="space-y-4">
+              {item.body.split("\n\n").filter(Boolean).map((para, i) => (
+                <p key={i} className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
+                  {para}
+                </p>
+              ))}
             </div>
           ) : (
             <div className="p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
