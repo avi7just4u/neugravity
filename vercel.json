@@ -3,6 +3,18 @@
     {
       "path": "/api/cron/poll-sources",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/poll-status",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-tools",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/check-freshness",
+      "schedule": "0 4 * * *"
     }
   ]
 }

@@ -5,11 +5,13 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Building2, ArrowRight } from "lucide-react"
 import { CompanyService } from "@/lib/services/company.service"
+import { ENV } from "@/lib/config/environment"
 import type { Company } from "@/types"
 
 export const metadata: Metadata = {
   title: "Companies",
   description: "Explore technology companies shaping the industry.",
+  robots: ENV.filterDemoData ? undefined : { index: false, follow: true },
 }
 
 function CompanyCard({ co }: { co: Company }) {

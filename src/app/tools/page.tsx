@@ -5,11 +5,13 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Wrench, ArrowRight, Star } from "lucide-react"
 import { ToolService } from "@/lib/services/tool.service"
+import { ENV } from "@/lib/config/environment"
 import type { Tool, PricingModel } from "@/types"
 
 export const metadata: Metadata = {
   title: "Tools",
   description: "Discover and compare developer tools, SaaS products, and software.",
+  robots: ENV.filterDemoData ? undefined : { index: false, follow: true },
 }
 
 const pricingVariant: Record<string, "success" | "info" | "secondary" | "outline"> = {

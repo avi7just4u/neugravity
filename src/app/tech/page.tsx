@@ -5,11 +5,13 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Cpu, ArrowRight } from "lucide-react"
 import { TechnologyService } from "@/lib/services/technology.service"
+import { ENV } from "@/lib/config/environment"
 import type { Technology, TechnologyType } from "@/types"
 
 export const metadata: Metadata = {
   title: "Technology",
   description: "Explore the technologies shaping how we build and work.",
+  robots: ENV.filterDemoData ? undefined : { index: false, follow: true },
 }
 
 const typeVariant: Record<string, "info" | "success" | "warning" | "secondary" | "outline"> = {

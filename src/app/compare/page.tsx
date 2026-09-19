@@ -5,11 +5,13 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { BarChart3, ArrowRight, Eye } from "lucide-react"
 import { ComparisonService } from "@/lib/services/comparison.service"
+import { ENV } from "@/lib/config/environment"
 import { formatDate } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Compare",
   description: "Compare technology tools, platforms, and products side by side.",
+  robots: ENV.filterDemoData ? undefined : { index: false, follow: true },
 }
 
 export default async function ComparePage() {

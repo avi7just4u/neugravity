@@ -42,7 +42,7 @@ async function getJobs(status: string) {
     const db = createAdminClient()
     let q = db
       .from("jobs")
-      .select("id, type, status, priority, attempt_count, max_attempts, payload, error, created_at, scheduled_for, started_at, completed_at")
+      .select("id, queue_name, job_type, status, priority, attempts, max_attempts, payload, last_error, error_message, created_at, scheduled_at, started_at, completed_at, failed_at")
       .order("created_at", { ascending: false })
       .limit(100)
     if (status !== "all") q = q.eq("status", status)
@@ -113,9 +113,9 @@ export default async function JobsPage({
                 return (
                   <tr key={job.id as string} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30">
                     <td className="px-4 py-3">
-                      <div className="font-mono text-xs text-zinc-900 dark:text-white">{job.type as string}</div>
-                      <div className="text-xs text-zinc-400 font-mono mt-0.5 truncate max-w-[180px]">
-                        {job.id as string}
+                      <div className="font-mono text-xs text-zinc-900 dark:text-white">{job.job_type as string}</div>
+                      <div className="text-xs text-zinc-400 mt-0.5 truncate max-w-[180px]">
+                        {job.queue_name as string}
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -128,8 +128,8 @@ export default async function JobsPage({
                       <span className="text-xs text-zinc-500">{job.priority as number}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium ${(job.attempt_count as number) >= (job.max_attempts as number) ? "text-red-600 dark:text-red-400" : "text-zinc-500"}`}>
-                        {job.attempt_count as number}/{job.max_attempts as number}
+                      <span className={`text-xs font-medium ${(job.attempts as number) >= (job.max_attempts as number) ? "text-red-600 dark:text-red-400" : "text-zinc-500"}`}>
+                        {job.attempts as number}/{job.max_attempts as number}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -139,16 +139,16 @@ export default async function JobsPage({
                       </span>
                     </td>
                     <td className="px-4 py-3 max-w-[200px]">
-                      {job.error ? (
+                      {(job.last_error || job.error_message) ? (
                         <span className="text-xs text-red-600 dark:text-red-400 line-clamp-2 font-mono">
-                          {job.error as string}
+                          {(job.last_error ?? job.error_message) as string}
                         </span>
                       ) : (
                         <span className="text-xs text-zinc-300 dark:text-zinc-600">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {canRetry && <JobActions id={job.id as string} />}
+                      <JobActions id={job.id as string} status={s} />
                     </td>
                   </tr>
                 )

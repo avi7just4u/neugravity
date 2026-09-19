@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server"
+import { ENV } from "@/lib/config/environment"
 import type { Comparison, PaginatedResponse } from "@/types"
 
 export const ComparisonService = {
@@ -20,6 +21,8 @@ export const ComparisonService = {
         .order("view_count", { ascending: false })
         .range(from, to)
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (ENV.filterDemoData) query = (query as any).eq("is_demo", false)
       if (featured !== undefined) query = query.eq("featured", featured)
 
       const { data, count, error } = await query

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   const { data: item } = await db
     .from("news_items")
-    .select("id, title, slug, status, content, summary, metadata")
+    .select("id, headline, slug, status, body, summary")
     .eq("id", news_item_id)
     .single()
 
@@ -35,19 +35,21 @@ export async function POST(request: NextRequest) {
 
   const now = new Date().toISOString()
 
-  // Save revision before publishing
+  // Save revision before publishing — use correct content_revisions schema (snapshot jsonb)
   await db.from("content_revisions").insert({
     content_type: "news_item",
     content_id: news_item_id,
-    title: item.title,
-    content: item.content,
-    summary: item.summary,
-    metadata: item.metadata,
+    version: 1,
+    snapshot: {
+      headline: item.headline,
+      summary: item.summary,
+      body: item.body,
+      status_before: item.status,
+    },
+    change_summary: "Published",
     created_by: published_by ?? null,
-    created_at: now,
   })
 
-  // Publish
   const { error } = await db
     .from("news_items")
     .update({
@@ -60,7 +62,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Invalidate ISR caches
   revalidatePath("/news")
   revalidatePath(`/news/${item.slug}`)
   revalidatePath("/")

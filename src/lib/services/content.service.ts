@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server"
+import { ENV } from "@/lib/config/environment"
 import type { Article, NewsItem, PaginatedResponse } from "@/types"
 
 export const ContentService = {
@@ -22,6 +23,8 @@ export const ContentService = {
         .order("published_at", { ascending: false })
         .range(from, to)
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (ENV.filterDemoData) query = (query as any).eq("is_demo", false)
       if (category) query = query.eq("category_id", category)
       if (featured !== undefined) query = query.eq("featured", featured)
 
@@ -76,11 +79,13 @@ export const ContentService = {
       const supabase = await createServiceClient()
       let query = supabase
         .from("news_items")
-        .select("id,slug,headline,summary,hero_image_url,author_id,cluster_id,category_id,status,importance,published_at,view_count,featured,created_at,updated_at", { count: "exact" })
+        .select("id,slug,headline,summary,hero_image_url,author_id,cluster_id,category_id,status,importance,published_at,source_published_at,view_count,featured,created_at,updated_at", { count: "exact" })
         .eq("status", "published")
         .order("published_at", { ascending: false })
         .range(from, to)
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (ENV.filterDemoData) query = (query as any).eq("is_demo", false)
       if (category) query = query.eq("category_id", category)
       if (importance !== undefined) query = query.gte("importance", importance)
       if (featured !== undefined) query = query.eq("featured", featured)

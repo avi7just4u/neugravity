@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server"
+import { ENV } from "@/lib/config/environment"
 import type { Tool, PaginatedResponse } from "@/types"
 
 export const ToolService = {
@@ -23,6 +24,8 @@ export const ToolService = {
         .order("popularity_score", { ascending: false })
         .range(from, to)
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (ENV.filterDemoData) query = (query as any).eq("is_demo", false)
       if (category) query = query.eq("category_id", category)
       if (pricingModel) query = query.eq("pricing_model", pricingModel)
       if (featured !== undefined) query = query.eq("featured", featured)

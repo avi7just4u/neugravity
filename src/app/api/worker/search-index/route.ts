@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const db = createAdminClient()
     const tableMap: Record<string, string> = {
-      news: "news_articles",
+      news: "news_items",
       tool: "tools",
       technology: "technologies",
       company: "companies",

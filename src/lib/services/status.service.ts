@@ -1,62 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server"
+import { getStatusConnector } from "@/lib/connectors/status"
 import type { StatusProvider, StatusIncident, StatusUpdate } from "@/types"
-
-const STATUS_KEYWORDS: Record<string, string> = {
-  investigating: "investigating",
-  identified: "identified",
-  monitoring: "monitoring",
-  resolved: "resolved",
-  postmortem: "postmortem",
-}
-
-function detectStatus(text: string): string {
-  const lower = text.toLowerCase()
-  for (const [keyword, status] of Object.entries(STATUS_KEYWORDS)) {
-    if (lower.includes(keyword)) return status
-  }
-  return "investigating"
-}
-
-function detectSeverity(text: string): "minor" | "major" | "critical" | null {
-  const lower = text.toLowerCase()
-  if (lower.includes("critical") || lower.includes("complete outage") || lower.includes("major outage")) return "critical"
-  if (lower.includes("major") || lower.includes("significant") || lower.includes("degraded")) return "major"
-  if (lower.includes("minor") || lower.includes("partial") || lower.includes("some users")) return "minor"
-  return null
-}
-
-function extractTag(xml: string, tag: string): string {
-  const patterns = [
-    new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>`, "i"),
-    new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"),
-  ]
-  for (const re of patterns) {
-    const m = xml.match(re)
-    if (m?.[1]) return m[1].trim()
-  }
-  return ""
-}
-
-function parseRSSItems(xml: string): Array<{
-  title: string
-  link: string
-  description: string
-  pubDate: string
-  guid: string
-}> {
-  const isAtom = xml.includes("<feed") && xml.includes("<entry")
-  const itemTag = isAtom ? "entry" : "item"
-  const itemRe = new RegExp(`<${itemTag}[\\s>][\\s\\S]*?</${itemTag}>`, "gi")
-  const rawItems = xml.match(itemRe) ?? []
-
-  return rawItems.slice(0, 20).map((raw) => ({
-    title: extractTag(raw, "title"),
-    link: extractTag(raw, isAtom ? "id" : "link") || extractTag(raw, "link"),
-    description: extractTag(raw, isAtom ? "summary" : "description") || extractTag(raw, "content"),
-    pubDate: extractTag(raw, isAtom ? "published" : "pubDate") || extractTag(raw, "updated"),
-    guid: extractTag(raw, "guid") || extractTag(raw, "id"),
-  }))
-}
 
 export const StatusService = {
   async getActiveProviders(): Promise<StatusProvider[]> {
@@ -87,58 +31,62 @@ export const StatusService = {
 
     if (!provider) return { incidents_created: 0, updates_added: 0, errors: ["Provider not found"] }
 
-    const feedUrl = provider.feed_url ?? (provider.official_status_url
-      ? provider.official_status_url.replace(/\/?$/, "") + "/history.rss"
-      : null)
+    // Use real connector if available
+    const slug = (provider.slug ?? provider.name ?? "").toLowerCase()
+    const connector = getStatusConnector(slug)
 
-    if (!feedUrl) return { incidents_created: 0, updates_added: 0, errors: ["No feed URL"] }
-
-    let xml: string
-    try {
-      const res = await fetch(feedUrl, {
-        signal: AbortSignal.timeout(10000),
-        headers: { "User-Agent": "NeuGravity-Bot/1.0", Accept: "application/rss+xml, application/atom+xml, text/xml" },
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      xml = await res.text()
-    } catch (err) {
-      errors.push(err instanceof Error ? err.message : String(err))
-      return { incidents_created, updates_added, errors }
+    if (!connector) {
+      // Mark as unconfigured — do not invent status
+      await db.from("status_providers").update({
+        last_error: "No connector configured for this provider",
+      }).eq("id", provider_id)
+      return { incidents_created: 0, updates_added: 0, errors: ["No connector configured"] }
     }
 
-    const items = parseRSSItems(xml)
+    try {
+      const result = await connector.fetchCurrentStatus()
 
-    for (const item of items) {
-      if (!item.title) continue
+      // Update provider with real status
+      await db.from("status_providers").update({
+        last_checked_at: result.checked_at,
+        last_success_at: result.checked_at,
+        last_error: null,
+      }).eq("id", provider_id)
 
-      const status = detectStatus(item.title + " " + item.description)
-      const severity = detectSeverity(item.title + " " + item.description)
-
-      try {
-        const { incident_id, is_new } = await this.upsertIncident(provider_id, {
-          external_incident_id: item.guid || undefined,
-          title: item.title,
-          status,
-          impact: severity ?? undefined,
-          started_at: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-          official_url: item.link || undefined,
-        })
-
-        if (is_new) incidents_created++
-
-        if (item.description) {
-          await this.addStatusUpdate(incident_id, {
-            external_update_id: item.guid ? `${item.guid}:initial` : undefined,
-            status,
-            message: item.description.replace(/<[^>]+>/g, "").trim(),
-            published_at: item.pubDate ? new Date(item.pubDate).toISOString() : undefined,
-            raw_payload: item as unknown as Record<string, unknown>,
+      for (const incident of result.incidents) {
+        try {
+          const { incident_id, is_new } = await this.upsertIncident(provider_id, {
+            external_incident_id: incident.external_id,
+            title: incident.title,
+            status: incident.status,
+            impact: incident.impact !== "maintenance" ? incident.impact : "minor",
+            started_at: incident.started_at,
+            resolved_at: incident.resolved_at,
+            official_url: incident.official_url,
           })
-          updates_added++
+
+          if (is_new) incidents_created++
+
+          for (const update of incident.updates) {
+            await this.addStatusUpdate(incident_id, {
+              external_update_id: update.external_id,
+              status: update.status,
+              message: update.message,
+              published_at: update.published_at,
+              raw_payload: { source: slug },
+            })
+            updates_added++
+          }
+        } catch (err) {
+          errors.push(err instanceof Error ? err.message : String(err))
         }
-      } catch (err) {
-        errors.push(err instanceof Error ? err.message : String(err))
       }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      await db.from("status_providers").update({
+        last_error: msg,
+      }).eq("id", provider_id)
+      errors.push(msg)
     }
 
     return { incidents_created, updates_added, errors }
@@ -152,24 +100,29 @@ export const StatusService = {
       status: string
       impact?: string
       started_at: string
+      resolved_at?: string
       official_url?: string
     }
   ): Promise<{ incident_id: string; is_new: boolean }> {
     const db = createAdminClient()
 
+    // Deduplicate by external_incident_id (the correct approach)
     if (data.external_incident_id) {
       const { data: existing } = await db
         .from("status_incidents")
         .select("id")
         .eq("provider_id", provider_id)
-        .eq("source_url", data.official_url ?? "")
+        .eq("external_incident_id", data.external_incident_id)
         .maybeSingle()
 
       if (existing) {
-        await db
-          .from("status_incidents")
-          .update({ status: data.status, checked_at: new Date().toISOString() })
-          .eq("id", existing.id)
+        // Update status if changed
+        await db.from("status_incidents").update({
+          status: data.status,
+          resolved_at: data.resolved_at ?? null,
+          last_updated_at: new Date().toISOString(),
+          checked_at: new Date().toISOString(),
+        }).eq("id", existing.id)
         return { incident_id: existing.id, is_new: false }
       }
     }
@@ -178,12 +131,16 @@ export const StatusService = {
       .from("status_incidents")
       .insert({
         provider_id,
+        external_incident_id: data.external_incident_id ?? null,
         title: data.title,
         status: data.status,
         severity: data.impact ?? null,
+        impact: data.impact ?? null,
         started_at: data.started_at,
+        resolved_at: data.resolved_at ?? null,
         source_url: data.official_url ?? null,
         checked_at: new Date().toISOString(),
+        last_updated_at: new Date().toISOString(),
       })
       .select("id")
       .single()

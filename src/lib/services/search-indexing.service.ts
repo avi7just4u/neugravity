@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { JobService } from "./job.service"
 
 const ENTITY_TABLE_MAP: Record<string, string> = {
-  news: "news_articles",
+  news: "news_items",
   tool: "tools",
   technology: "technologies",
   company: "companies",

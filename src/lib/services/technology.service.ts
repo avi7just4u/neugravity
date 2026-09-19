@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server"
+import { ENV } from "@/lib/config/environment"
 import type { Technology, PaginatedResponse } from "@/types"
 
 export const TechnologyService = {
@@ -22,6 +23,8 @@ export const TechnologyService = {
         .order("popularity_score", { ascending: false })
         .range(from, to)
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (ENV.filterDemoData) query = (query as any).eq("is_demo", false)
       if (type) query = query.eq("type", type)
       if (featured !== undefined) query = query.eq("featured", featured)
       if (search) query = query.ilike("name", `%${search}%`)

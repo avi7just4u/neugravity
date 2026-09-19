@@ -3,8 +3,8 @@ import { StatusService } from "@/lib/services/status.service"
 import { JobService } from "@/lib/services/job.service"
 
 export async function GET(request: NextRequest) {
-  const secret = request.headers.get("x-cron-secret")
-  if (!secret || secret !== process.env.CRON_SECRET) {
+  const authHeader = request.headers.get("authorization")
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

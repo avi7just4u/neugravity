@@ -27,6 +27,13 @@ function formatRelative(iso: string | null): string {
   return `${Math.floor(h / 24)}d ago`
 }
 
+function formatInterval(seconds: number | null): string {
+  if (!seconds) return "—"
+  if (seconds < 3600) return `Every ${Math.round(seconds / 60)}m`
+  if (seconds < 86400) return `Every ${Math.round(seconds / 3600)}h`
+  return `Every ${Math.round(seconds / 86400)}d`
+}
+
 async function getSources(health?: string) {
   try {
     const db = createAdminClient()
@@ -103,10 +110,10 @@ export default async function SourcesPage({
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
                 <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Source</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Type</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Type / Connector</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Health</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Last Poll</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Next Poll</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Interval</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Failures</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -122,12 +129,22 @@ export default async function SourcesPage({
                         <Globe className="h-4 w-4 text-zinc-400 shrink-0" />
                         <div>
                           <div className="font-medium text-zinc-900 dark:text-white">{source.name as string}</div>
-                          <div className="text-xs text-zinc-400">{source.domain as string}</div>
+                          <div className="text-xs text-zinc-400 truncate max-w-[200px]">
+                            {(source.feed_url ?? source.api_url ?? source.base_url ?? source.website_url) as string | null ?? "—"}
+                          </div>
+                          {Boolean(source.last_error) && (
+                            <div className="text-xs text-red-500 truncate max-w-[200px] mt-0.5">{source.last_error as string}</div>
+                          )}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant="secondary" className="text-xs capitalize">{source.source_type as string}</Badge>
+                      <div>
+                        <Badge variant="secondary" className="text-xs capitalize">{source.source_type as string}</Badge>
+                        {Boolean(source.parser_key) && (
+                          <div className="text-xs text-zinc-400 font-mono mt-0.5">{source.parser_key as string}</div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
@@ -145,7 +162,7 @@ export default async function SourcesPage({
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-zinc-400">
-                        {formatRelative(source.next_poll_at as string | null)}
+                        {formatInterval(source.poll_interval_seconds as number | null)}
                       </span>
                     </td>
                     <td className="px-4 py-3">

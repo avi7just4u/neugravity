@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge"
 import { Newspaper, Clock, TrendingUp } from "lucide-react"
 import { ContentService } from "@/lib/services/content.service"
 import { formatRelativeDate } from "@/lib/utils"
+import { ENV } from "@/lib/config/environment"
 
 export const metadata: Metadata = {
   title: "Technology News",
   description: "Curated, sourced, and contextualized technology news.",
+  robots: ENV.filterDemoData ? undefined : { index: false, follow: true },
 }
 
 const trendingTopics = ["Model Context Protocol", "AI Agents", "Serverless", "Rust", "LLMs", "WebAssembly"]
@@ -47,10 +49,10 @@ export default async function NewsPage() {
                 <Link key={item.id} href={`/news/${item.slug}`} className="group flex flex-col gap-2 py-5 first:pt-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     {importanceBadge(item.importance)}
-                    {item.published_at && (
+                    {(item.source_published_at ?? item.published_at) && (
                       <span className="text-xs text-zinc-400 ml-auto flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {formatRelativeDate(item.published_at)}
+                        {formatRelativeDate((item.source_published_at ?? item.published_at)!)}
                       </span>
                     )}
                   </div>
