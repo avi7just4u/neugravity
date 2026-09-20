@@ -34,6 +34,12 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
   course: "Course",
 }
 
+const PRIORITY_BADGE: Record<number, string> = {
+  9: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  8: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  7: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+}
+
 async function getQueueItems(status: string) {
   try {
     const db = createAdminClient()
@@ -43,7 +49,31 @@ async function getQueueItems(status: string) {
       .eq("processing_status", status)
       .order("discovered_at", { ascending: false })
       .limit(50)
-    return (data ?? []) as Record<string, unknown>[]
+    if (!data || data.length === 0) return []
+
+    const sourceIds = [...new Set(data.map((i) => i.source_id).filter(Boolean))] as string[]
+    const sourceMap = new Map<string, { name: string; source_priority: number | null; trust_level_label: string | null }>()
+
+    if (sourceIds.length > 0) {
+      const { data: sources } = await db
+        .from("sources")
+        .select("id, name, source_priority, trust_level_label")
+        .in("id", sourceIds)
+      for (const s of sources ?? []) {
+        sourceMap.set(s.id, {
+          name: s.name,
+          source_priority: s.source_priority ?? null,
+          trust_level_label: s.trust_level_label ?? null,
+        })
+      }
+    }
+
+    return data.map((item) => ({
+      ...item,
+      sourceName: sourceMap.get(item.source_id)?.name ?? null,
+      sourcePriority: sourceMap.get(item.source_id)?.source_priority ?? null,
+      trustLabel: sourceMap.get(item.source_id)?.trust_level_label ?? null,
+    }))
   } catch {
     return []
   }
@@ -96,6 +126,17 @@ export default async function EditorialPage({
                     <span className="px-2 py-0.5 text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-full">
                       {CONTENT_TYPE_LABELS[item.content_type as string] ?? (item.content_type as string)}
                     </span>
+                    {(item as any).sourceName && (
+                      <span className="text-xs text-zinc-500 font-medium">{(item as any).sourceName}</span>
+                    )}
+                    {(item as any).sourcePriority != null && (item as any).sourcePriority >= 7 && (
+                      <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${PRIORITY_BADGE[(item as any).sourcePriority] ?? ""}`}>
+                        P{(item as any).sourcePriority}
+                      </span>
+                    )}
+                    {(item as any).trustLabel === "official" && (
+                      <span className="px-1.5 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded">official</span>
+                    )}
                     {Boolean(item.author) && (
                       <span className="text-xs text-zinc-400">{String(item.author)}</span>
                     )}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { QualityGateService } from "@/lib/services/quality-gate.service"
 
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-worker-secret")
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
 
   const { data: item } = await db
     .from("news_items")
-    .select("id, headline, slug, status, body, summary")
+    .select("id, headline, slug, status, body, summary, category, tags")
     .eq("id", news_item_id)
     .single()
 
@@ -31,6 +32,21 @@ export async function POST(request: NextRequest) {
 
   if (item.status !== "approved") {
     return NextResponse.json({ error: "Item must be approved before publishing" }, { status: 422 })
+  }
+
+  const gate = QualityGateService.check({
+    headline: item.headline,
+    summary: item.summary,
+    body: item.body,
+    category: item.category,
+    tags: item.tags,
+  })
+
+  if (!gate.passed) {
+    return NextResponse.json(
+      { error: "quality_gate_failed", missing: gate.missing, warnings: gate.warnings },
+      { status: 422 }
+    )
   }
 
   const now = new Date().toISOString()

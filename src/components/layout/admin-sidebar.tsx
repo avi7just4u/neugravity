@@ -24,6 +24,7 @@ import {
   RefreshCw,
   GitCompareArrows,
   Bell,
+  BrainCircuit,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -97,6 +98,7 @@ const navGroups: NavGroup[] = [
     title: "System",
     items: [
       { label: "Jobs", href: "/admin/system/jobs", icon: <BriefcaseBusiness className="h-4 w-4" /> },
+      { label: "AI Usage", href: "/admin/system/ai", icon: <BrainCircuit className="h-4 w-4" /> },
       { label: "Notifications", href: "/admin/system/notifications", icon: <Bell className="h-4 w-4" /> },
       { label: "Freshness", href: "/admin/freshness", icon: <RefreshCw className="h-4 w-4" /> },
       { label: "Health", href: "/admin/system/health", icon: <AlertCircle className="h-4 w-4" /> },

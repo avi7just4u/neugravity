@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { DeduplicationService, hashContent } from "@/lib/services/deduplication.service"
-import { AIService } from "@/lib/services/ai.service"
+import { AIService, AINotConfiguredError } from "@/lib/services/ai.service"
 import { JobService } from "@/lib/services/job.service"
 
 export async function POST(request: NextRequest) {
@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
   const text = item.content ?? item.description ?? ""
   const contentHash = hashContent(item.title ?? "", text)
 
-  // Deduplication check
   const { isDuplicate, existingId, strategy } = await DeduplicationService.check({
     canonical_url: item.canonical_url,
     external_id: item.external_id,
@@ -53,13 +52,42 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ deduplicated: true, existingId, strategy })
   }
 
-  // AI enrichment
-  const [summary, classification, entities, tags] = await Promise.all([
-    AIService.generateSummary(item.title ?? "", text, source_item_id),
-    AIService.classify(item.title ?? "", text, source_item_id),
-    AIService.extractEntities(item.title ?? "", text, source_item_id),
-    AIService.generateTags(item.title ?? "", text, source_item_id),
-  ])
+  // Mark as enriching so concurrent workers don't double-process
+  await db
+    .from("source_items")
+    .update({ processing_status: "enriching" })
+    .eq("id", source_item_id)
+
+  let summary: string
+  let classification: { category: string; subcategory: string }
+  let entities: { companies: string[]; technologies: string[]; people: string[] }
+  let tags: string[]
+
+  try {
+    ;[summary, classification, entities, tags] = await Promise.all([
+      AIService.generateSummary(item.title ?? "", text, source_item_id),
+      AIService.classify(item.title ?? "", text, source_item_id),
+      AIService.extractEntities(item.title ?? "", text, source_item_id),
+      AIService.generateTags(item.title ?? "", text, source_item_id),
+    ])
+  } catch (err) {
+    if (err instanceof AINotConfiguredError) {
+      await db
+        .from("source_items")
+        .update({ processing_status: "failed", metadata: { error: "AI_NOT_CONFIGURED" } })
+        .eq("id", source_item_id)
+      return NextResponse.json(
+        { error: "AI_NOT_CONFIGURED", message: "Set a real ANTHROPIC_API_KEY to enable enrichment" },
+        { status: 503 }
+      )
+    }
+    const message = err instanceof Error ? err.message : String(err)
+    await db
+      .from("source_items")
+      .update({ processing_status: "failed", metadata: { error: message } })
+      .eq("id", source_item_id)
+    return NextResponse.json({ error: "enrichment_failed", message }, { status: 500 })
+  }
 
   const enrichment = {
     summary,
@@ -79,7 +107,6 @@ export async function POST(request: NextRequest) {
     })
     .eq("id", source_item_id)
 
-  // Enqueue for news processing if it's a news-type item
   if (item.content_type === "news" || item.content_type === "article") {
     await JobService.enqueue({
       queue_name: "news-processing",

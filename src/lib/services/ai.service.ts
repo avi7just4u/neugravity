@@ -1,15 +1,94 @@
 import { createAdminClient } from "@/lib/supabase/server"
 import { AI_CONFIG } from "@/lib/config/ai.config"
+import { PROMPTS, PROMPT_VERSION } from "@/lib/ai/prompts"
 
-async function callClaude(prompt: string, task: string, model?: string): Promise<string> {
+export class AINotConfiguredError extends Error {
+  constructor() {
+    super("AI_NOT_CONFIGURED: No AI provider is configured. Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY.")
+    this.name = "AINotConfiguredError"
+  }
+}
+
+function assertConfigured(): void {
+  if (!AI_CONFIG.isConfigured()) {
+    throw new AINotConfiguredError()
+  }
+}
+
+async function callClaude(
+  prompt: string,
+  task: keyof typeof AI_CONFIG.maxTokens,
+  model: string
+): Promise<{ text: string; inputTokens: number; outputTokens: number }> {
+  const provider = AI_CONFIG.resolvedProvider()
+  if (!provider) throw new AINotConfiguredError()
+
+  const maxTokens = AI_CONFIG.maxTokens[task] ?? 512
+
+  if (provider === "openrouter") {
+    const openRouterModel = AI_CONFIG.openRouterModel
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://neugravity.vercel.app",
+        "X-Title": "NeuGravity",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: openRouterModel,
+        messages: [
+          { role: "system", content: "You are a helpful AI assistant for NeuGravity, a tech intelligence platform." },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: maxTokens,
+      }),
+    })
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(`OpenRouter error ${res.status}: ${body}`)
+    }
+    const json = await res.json()
+    const text: string = json.choices?.[0]?.message?.content ?? ""
+    const usage = json.usage ?? {}
+    return {
+      text,
+      inputTokens: usage.prompt_tokens ?? 0,
+      outputTokens: usage.completion_tokens ?? 0,
+    }
+  }
+
+  // Anthropic
   const Anthropic = (await import("@anthropic-ai/sdk")).default
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const message = await client.messages.create({
-    model: model ?? AI_CONFIG.defaultModel,
-    max_tokens: AI_CONFIG.maxTokens[task as keyof typeof AI_CONFIG.maxTokens] ?? 512,
+    model,
+    max_tokens: maxTokens,
     messages: [{ role: "user", content: prompt }],
   })
-  return message.content.find((b) => b.type === "text")?.text ?? ""
+  const text = message.content.find((b) => b.type === "text")?.text ?? ""
+  return {
+    text,
+    inputTokens: message.usage.input_tokens,
+    outputTokens: message.usage.output_tokens,
+  }
+}
+
+async function parseJsonWithRetry<T>(
+  raw: string,
+  extractPattern: RegExp,
+  fallback: T,
+  maxAttempts = 2
+): Promise<T> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const match = raw.match(extractPattern)
+      if (match) return JSON.parse(match[0]) as T
+    } catch {
+      // try next attempt
+    }
+  }
+  return fallback
 }
 
 async function logGeneration(opts: {
@@ -18,9 +97,10 @@ async function logGeneration(opts: {
   output: string
   latency_ms: number
   token_usage?: { input: number; output: number }
-  status: "success" | "error"
+  status: "completed" | "failed"
   error?: string
   model: string
+  prompt_version: string
 }) {
   try {
     const db = createAdminClient()
@@ -30,106 +110,139 @@ async function logGeneration(opts: {
       input_reference: opts.input_reference,
       output: opts.output,
       latency_ms: opts.latency_ms,
-      token_usage: opts.token_usage ?? null,
+      token_usage: opts.token_usage ? { input: opts.token_usage.input, output: opts.token_usage.output } : null,
       status: opts.status,
       error: opts.error ?? null,
+      prompt_version: opts.prompt_version,
     })
   } catch {
-    // non-critical — swallow
+    // non-critical
   }
 }
 
 export const AIService = {
   async generateSummary(title: string, content: string, sourceItemId: string): Promise<string> {
-    if (AI_CONFIG.isPlaceholderKey()) {
-      return `${title}. ${content.slice(0, 200)}...`
-    }
+    assertConfigured()
     const model = AI_CONFIG.summaryModel
-    const prompt = `Summarize the following article in 2-3 sentences for a tech professional audience. Be concise and factual. Do not invent dates, quotes, or claims not present in the source.\n\nTitle: ${title}\n\nContent:\n${content.slice(0, 3000)}`
+    const prompt = PROMPTS.summarize(title, content)
     const t0 = Date.now()
     try {
-      const result = await callClaude(prompt, "summary", model)
-      await logGeneration({ task: "summarize", input_reference: sourceItemId, output: result, latency_ms: Date.now() - t0, status: "success", model })
-      return result
+      const { text, inputTokens, outputTokens } = await callClaude(prompt, "summary", model)
+      await logGeneration({
+        task: "summarize",
+        input_reference: sourceItemId,
+        output: text,
+        latency_ms: Date.now() - t0,
+        token_usage: { input: inputTokens, output: outputTokens },
+        status: "completed",
+        model,
+        prompt_version: PROMPT_VERSION,
+      })
+      return text
     } catch (err) {
+      if (err instanceof AINotConfiguredError) throw err
       const error = err instanceof Error ? err.message : String(err)
-      await logGeneration({ task: "summarize", input_reference: sourceItemId, output: "", latency_ms: Date.now() - t0, status: "error", error, model })
-      return `${title}. ${content.slice(0, 200)}...`
+      await logGeneration({ task: "summarize", input_reference: sourceItemId, output: "", latency_ms: Date.now() - t0, status: "failed", error, model, prompt_version: PROMPT_VERSION })
+      throw err
     }
   },
 
-  async classify(title: string, content: string, sourceItemId: string): Promise<{ category: string; subcategory: string }> {
-    if (AI_CONFIG.isPlaceholderKey()) {
-      return { category: "technology", subcategory: "general" }
-    }
+  async classify(
+    title: string,
+    content: string,
+    sourceItemId: string
+  ): Promise<{ category: string; subcategory: string }> {
+    assertConfigured()
     const model = AI_CONFIG.classificationModel
-    const prompt = `Classify this tech article into a category and subcategory. Return ONLY valid JSON: {"category": "...", "subcategory": "..."}\n\nCategories: ai, cloud, security, developer-tools, databases, networking, hardware, business, open-source\n\nTitle: ${title}\n\nContent: ${content.slice(0, 1000)}`
+    const prompt = PROMPTS.classify(title, content)
     const t0 = Date.now()
+    const fallback = { category: "technology", subcategory: "general" }
     try {
-      const result = await callClaude(prompt, "classification", model)
-      const parsed = JSON.parse(result.match(/\{[^}]+\}/)?.[0] ?? '{"category":"technology","subcategory":"general"}')
-      await logGeneration({ task: "classify", input_reference: sourceItemId, output: result, latency_ms: Date.now() - t0, status: "success", model })
+      const { text, inputTokens, outputTokens } = await callClaude(prompt, "classification", model)
+      const parsed = await parseJsonWithRetry<{ category: string; subcategory: string }>(
+        text,
+        /\{[^}]+\}/,
+        fallback
+      )
+      await logGeneration({
+        task: "classify",
+        input_reference: sourceItemId,
+        output: text,
+        latency_ms: Date.now() - t0,
+        token_usage: { input: inputTokens, output: outputTokens },
+        status: "completed",
+        model,
+        prompt_version: PROMPT_VERSION,
+      })
       return parsed
     } catch (err) {
+      if (err instanceof AINotConfiguredError) throw err
       const error = err instanceof Error ? err.message : String(err)
-      await logGeneration({ task: "classify", input_reference: sourceItemId, output: "", latency_ms: Date.now() - t0, status: "error", error, model })
-      return { category: "technology", subcategory: "general" }
+      await logGeneration({ task: "classify", input_reference: sourceItemId, output: "", latency_ms: Date.now() - t0, status: "failed", error, model, prompt_version: PROMPT_VERSION })
+      throw err
     }
   },
 
-  async extractEntities(title: string, content: string, sourceItemId: string): Promise<{ companies: string[]; technologies: string[]; people: string[] }> {
-    if (AI_CONFIG.isPlaceholderKey()) {
-      return { companies: [], technologies: [], people: [] }
-    }
+  async extractEntities(
+    title: string,
+    content: string,
+    sourceItemId: string
+  ): Promise<{ companies: string[]; technologies: string[]; people: string[] }> {
+    assertConfigured()
     const model = AI_CONFIG.entityModel
-    const prompt = `Extract named entities from this tech article. Only include entities explicitly mentioned — do not invent. Return ONLY valid JSON: {"companies": [...], "technologies": [...], "people": [...]}\n\nTitle: ${title}\n\nContent: ${content.slice(0, 2000)}`
+    const prompt = PROMPTS.extractEntities(title, content)
     const t0 = Date.now()
+    const fallback = { companies: [], technologies: [], people: [] }
     try {
-      const result = await callClaude(prompt, "entityExtraction", model)
-      const parsed = JSON.parse(result.match(/\{[\s\S]*\}/)?.[0] ?? '{"companies":[],"technologies":[],"people":[]}')
-      await logGeneration({ task: "extract_entities", input_reference: sourceItemId, output: result, latency_ms: Date.now() - t0, status: "success", model })
+      const { text, inputTokens, outputTokens } = await callClaude(prompt, "entityExtraction", model)
+      const parsed = await parseJsonWithRetry<{ companies: string[]; technologies: string[]; people: string[] }>(
+        text,
+        /\{[\s\S]*\}/,
+        fallback
+      )
+      await logGeneration({
+        task: "extract_entities",
+        input_reference: sourceItemId,
+        output: text,
+        latency_ms: Date.now() - t0,
+        token_usage: { input: inputTokens, output: outputTokens },
+        status: "completed",
+        model,
+        prompt_version: PROMPT_VERSION,
+      })
       return parsed
     } catch (err) {
+      if (err instanceof AINotConfiguredError) throw err
       const error = err instanceof Error ? err.message : String(err)
-      await logGeneration({ task: "extract_entities", input_reference: sourceItemId, output: "", latency_ms: Date.now() - t0, status: "error", error, model })
-      return { companies: [], technologies: [], people: [] }
+      await logGeneration({ task: "extract_entities", input_reference: sourceItemId, output: "", latency_ms: Date.now() - t0, status: "failed", error, model, prompt_version: PROMPT_VERSION })
+      throw err
     }
   },
 
   async generateTags(title: string, content: string, sourceItemId: string): Promise<string[]> {
-    if (AI_CONFIG.isPlaceholderKey()) {
-      return []
-    }
+    assertConfigured()
     const model = AI_CONFIG.defaultModel
-    const prompt = `Generate 3-7 tags for this tech article. Return ONLY a JSON array of lowercase tag strings: ["tag1", "tag2", ...]\n\nTitle: ${title}\n\nContent: ${content.slice(0, 1000)}`
+    const prompt = PROMPTS.generateTags(title, content)
     const t0 = Date.now()
     try {
-      const result = await callClaude(prompt, "tagGeneration", model)
-      const parsed = JSON.parse(result.match(/\[[\s\S]*\]/)?.[0] ?? "[]")
-      await logGeneration({ task: "generate_tags", input_reference: sourceItemId, output: result, latency_ms: Date.now() - t0, status: "success", model })
+      const { text, inputTokens, outputTokens } = await callClaude(prompt, "tagGeneration", model)
+      const parsed = await parseJsonWithRetry<string[]>(text, /\[[\s\S]*\]/, [])
+      await logGeneration({
+        task: "generate_tags",
+        input_reference: sourceItemId,
+        output: text,
+        latency_ms: Date.now() - t0,
+        token_usage: { input: inputTokens, output: outputTokens },
+        status: "completed",
+        model,
+        prompt_version: PROMPT_VERSION,
+      })
       return Array.isArray(parsed) ? parsed.slice(0, 7) : []
     } catch (err) {
+      if (err instanceof AINotConfiguredError) throw err
       const error = err instanceof Error ? err.message : String(err)
-      await logGeneration({ task: "generate_tags", input_reference: sourceItemId, output: "", latency_ms: Date.now() - t0, status: "error", error, model })
-      return []
-    }
-  },
-
-  async detectDuplicate(title: string, recentTitles: string[], sourceItemId: string): Promise<{ isDuplicate: boolean; duplicateOf?: string }> {
-    if (AI_CONFIG.isPlaceholderKey() || recentTitles.length === 0) {
-      return { isDuplicate: false }
-    }
-    const model = AI_CONFIG.classificationModel
-    const list = recentTitles.slice(0, 20).map((t, i) => `${i + 1}. ${t}`).join("\n")
-    const prompt = `Is the following article a duplicate or near-duplicate of any article in the list? Return ONLY valid JSON: {"isDuplicate": true/false, "duplicateOf": "matching title or null"}\n\nNew article: "${title}"\n\nRecent articles:\n${list}`
-    const t0 = Date.now()
-    try {
-      const result = await callClaude(prompt, "classification", model)
-      const parsed = JSON.parse(result.match(/\{[^}]+\}/)?.[0] ?? '{"isDuplicate":false}')
-      await logGeneration({ task: "detect_duplicate", input_reference: sourceItemId, output: result, latency_ms: Date.now() - t0, status: "success", model })
-      return parsed
-    } catch {
-      return { isDuplicate: false }
+      await logGeneration({ task: "generate_tags", input_reference: sourceItemId, output: "", latency_ms: Date.now() - t0, status: "failed", error, model, prompt_version: PROMPT_VERSION })
+      throw err
     }
   },
 }
