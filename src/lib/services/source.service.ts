@@ -79,10 +79,42 @@ export const SourceService = {
       .select("*")
       .eq("active", true)
       .or(`next_poll_at.is.null,next_poll_at.lte.${new Date().toISOString()}`)
+      .order("source_priority", { ascending: false, nullsFirst: false })
       .order("next_poll_at", { ascending: true, nullsFirst: true })
       .limit(limit)
     if (error) return []
     return (data ?? []) as Source[]
+  },
+
+  async getHealthSummary(): Promise<{
+    total: number
+    active: number
+    healthy: number
+    warning: number
+    failed: number
+    disabled: number
+    unknown: number
+    byCategory: Record<string, number>
+  }> {
+    const db = createAdminClient()
+    const { data } = await db.from("sources").select("active, health_status, category")
+    const rows = data ?? []
+    const byCategory: Record<string, number> = {}
+    let active = 0, healthy = 0, warning = 0, failed = 0, disabled = 0, unknown = 0
+
+    for (const r of rows) {
+      if (r.active) active++
+      const h = r.health_status as string
+      if (h === "healthy") healthy++
+      else if (h === "warning") warning++
+      else if (h === "failed") failed++
+      else if (h === "disabled") disabled++
+      else unknown++
+
+      if (r.category) byCategory[r.category as string] = (byCategory[r.category as string] ?? 0) + 1
+    }
+
+    return { total: rows.length, active, healthy, warning, failed, disabled, unknown, byCategory }
   },
 
   async recordSuccess(id: string, itemsDiscovered: number): Promise<void> {
