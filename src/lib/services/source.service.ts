@@ -158,6 +158,7 @@ export const SourceService = {
           .from("source_items")
           .insert({
             ...item,
+            raw_url: item.raw_url ?? item.canonical_url,
             processing_status: "duplicate",
             duplicate_of: existing.id,
             discovered_at: new Date().toISOString(),
@@ -188,6 +189,7 @@ export const SourceService = {
       .from("source_items")
       .insert({
         ...item,
+        raw_url: item.raw_url ?? item.canonical_url,
         processing_status: item.processing_status ?? "discovered",
         discovered_at: item.discovered_at ?? new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -195,7 +197,10 @@ export const SourceService = {
       .select("*")
       .single()
 
-    if (error || !created) return { item: item as SourceItem, isDuplicate: false }
+    if (error || !created) {
+      console.error("[SourceService.upsertSourceItem] insert error:", error?.message)
+      return { item: item as SourceItem, isDuplicate: false }
+    }
     return { item: created as SourceItem, isDuplicate: false }
   },
 }
