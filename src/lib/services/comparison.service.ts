@@ -60,13 +60,14 @@ export const ComparisonService = {
   async getPopularComparisons(limit = 5): Promise<Comparison[]> {
     try {
       const supabase = await createServiceClient()
-      const { data, error } = await supabase
+      let q = supabase
         .from("comparisons")
         .select("*")
         .eq("status", "published")
         .order("view_count", { ascending: false })
         .limit(limit)
-
+      if (ENV.filterDemoData) q = (q as any).eq("is_demo", false)
+      const { data, error } = await q
       if (error || !data) return []
       return data as Comparison[]
     } catch {
