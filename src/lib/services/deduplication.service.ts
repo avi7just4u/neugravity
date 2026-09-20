@@ -40,54 +40,45 @@ export const DeduplicationService = {
     canonical_url?: string | null
     external_id?: string | null
     source_id: string
+    source_item_id?: string  // exclude self
     title: string
     content?: string | null
     content_hash?: string | null
   }): Promise<{ isDuplicate: boolean; existingId?: string; strategy?: string }> {
     const db = createAdminClient()
+    const selfId = opts.source_item_id
 
-    // Strategy 1: exact URL match across all sources
+    // Strategy 1: exact URL match across all sources (exclude self)
     if (opts.canonical_url) {
       const normalized = normalizeUrl(opts.canonical_url)
-      const { data } = await db
-        .from("source_items")
-        .select("id")
-        .eq("canonical_url", normalized)
-        .limit(1)
-        .maybeSingle()
+      let q = db.from("source_items").select("id").eq("canonical_url", normalized).limit(1)
+      if (selfId) q = q.neq("id", selfId)
+      const { data } = await q.maybeSingle()
       if (data) return { isDuplicate: true, existingId: data.id, strategy: "url" }
     }
 
-    // Strategy 2: external_id within the same source
+    // Strategy 2: external_id within same source (exclude self)
     if (opts.external_id) {
-      const { data } = await db
-        .from("source_items")
-        .select("id")
-        .eq("source_id", opts.source_id)
-        .eq("external_id", opts.external_id)
-        .limit(1)
-        .maybeSingle()
+      let q = db.from("source_items").select("id").eq("source_id", opts.source_id).eq("external_id", opts.external_id).limit(1)
+      if (selfId) q = q.neq("id", selfId)
+      const { data } = await q.maybeSingle()
       if (data) return { isDuplicate: true, existingId: data.id, strategy: "external_id" }
     }
 
-    // Strategy 3: content hash
-    const hash =
-      opts.content_hash ?? hashContent(opts.title, opts.content)
-    const { data: hashMatch } = await db
-      .from("source_items")
-      .select("id")
-      .eq("content_hash", hash)
-      .limit(1)
-      .maybeSingle()
-    if (hashMatch) return { isDuplicate: true, existingId: hashMatch.id, strategy: "content_hash" }
+    // Strategy 3: content hash (exclude self)
+    const hash = opts.content_hash ?? hashContent(opts.title, opts.content)
+    if (hash) {
+      let q = db.from("source_items").select("id").eq("content_hash", hash).limit(1)
+      if (selfId) q = q.neq("id", selfId)
+      const { data: hashMatch } = await q.maybeSingle()
+      if (hashMatch) return { isDuplicate: true, existingId: hashMatch.id, strategy: "content_hash" }
+    }
 
-    // Strategy 4: title similarity (fuzzy, recent items only)
+    // Strategy 4: title similarity (fuzzy, recent items, exclude self)
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    const { data: recent } = await db
-      .from("source_items")
-      .select("id, title")
-      .gte("created_at", since)
-      .limit(200)
+    let recentQ = db.from("source_items").select("id, title").gte("created_at", since).limit(200)
+    if (selfId) recentQ = recentQ.neq("id", selfId)
+    const { data: recent } = await recentQ
 
     for (const row of recent ?? []) {
       if (row.title && titleSimilarity(opts.title, row.title) >= 0.8) {

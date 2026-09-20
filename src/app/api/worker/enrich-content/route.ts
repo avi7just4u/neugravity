@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     canonical_url: item.canonical_url,
     external_id: item.external_id,
     source_id: item.source_id,
+    source_item_id: source_item_id,
     title: item.title ?? "",
     content: text,
     content_hash: contentHash,
