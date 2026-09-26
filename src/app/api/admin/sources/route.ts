@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
+import { requireAdminAuth } from "@/lib/auth/admin-auth"
+import { AuditService } from "@/lib/services/audit.service"
 
 export async function POST(req: NextRequest) {
+  const authResult = await requireAdminAuth(["admin", "super_admin"])
+  if (authResult instanceof NextResponse) return authResult
+  const { userId, email } = authResult
+
   try {
-    const body = await req.json() as {
+    const body = (await req.json()) as {
       name: string
       domain: string
       source_type: string
@@ -45,6 +51,16 @@ export async function POST(req: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    await AuditService.log({
+      actor_id: userId,
+      actor_email: email,
+      action: "create_source",
+      entity_type: "source",
+      entity_id: data?.id ?? null,
+      summary: `Created source "${body.name.trim()}" (${body.domain.trim()})`,
+      metadata: { name: body.name.trim(), domain: body.domain.trim(), source_type: body.source_type },
+    })
 
     return NextResponse.json(data, { status: 201 })
   } catch (err) {

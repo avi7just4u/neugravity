@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient, createAdminClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
+import { requireAdminAuth } from "@/lib/auth/admin-auth"
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await createClient()
-  const { data: { user } } = await auth.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const authResult = await requireAdminAuth()
+  if (authResult instanceof NextResponse) return authResult
 
   const { id } = await params
   const db = createAdminClient()

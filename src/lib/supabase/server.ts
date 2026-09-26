@@ -56,3 +56,14 @@ export async function createServiceClient(): Promise<ReturnType<typeof createSer
     }
   )
 }
+
+// Cookie-free anon client — for public read queries in ISR/static routes.
+// Uses the anon key; RLS applies (reads as anonymous user). Never calls cookies().
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function createAnonClient(): SupabaseClient<any> {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}

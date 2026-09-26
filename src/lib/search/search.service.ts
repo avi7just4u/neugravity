@@ -16,6 +16,104 @@ class PostgresSearchService implements ISearchService {
     const cleaned = parseSearchQuery(query)
     if (!cleaned) return { results: [], total: 0, query, took_ms: 0, grouped: {} }
 
+    // Alias resolution: check if the query is a known alias before full-text search
+    const aliasResults = await this.resolveAliasToResults(cleaned, opts?.types)
+    if (aliasResults.length > 0) {
+      // Run regular search too, then prepend alias match
+      const regularResults = await this.runSearch(cleaned, opts)
+      // Deduplicate by id
+      const aliasIds = new Set(aliasResults.map((r) => r.id))
+      const deduped = [
+        ...aliasResults,
+        ...regularResults.results.filter((r) => !aliasIds.has(r.id)),
+      ]
+      const limit = opts?.limit ?? 20
+      const grouped: Record<string, SearchResult[]> = {}
+      for (const r of deduped) {
+        if (!grouped[r.type]) grouped[r.type] = []
+        grouped[r.type].push(r)
+      }
+      return {
+        results: deduped.slice(0, limit),
+        total: deduped.length,
+        query,
+        took_ms: Date.now() - start,
+        grouped,
+      }
+    }
+
+    return this.runSearch(cleaned, opts)
+  }
+
+  private async resolveAliasToResults(
+    query: string,
+    types?: string[]
+  ): Promise<SearchResult[]> {
+    try {
+      const normalized = query.trim().toLowerCase()
+      const supabase = await createServiceClient()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q: any = supabase
+        .from("entity_aliases")
+        .select("entity_type, entity_id")
+        .eq("normalized_alias", normalized)
+        .limit(1)
+      if (types && types.length > 0) q = q.in("entity_type", types)
+      const { data } = await q
+      if (!data || data.length === 0) return []
+
+      const { entity_type, entity_id } = data[0] as { entity_type: string; entity_id: string }
+
+      if (entity_type === "technology") {
+        const { data: tech } = await supabase
+          .from("technologies")
+          .select("id,name,slug,description,type,icon_url")
+          .eq("id", entity_id)
+          .eq("published", true)
+          .single()
+        if (!tech) return []
+        const t = tech as Record<string, unknown>
+        return [{
+          id: t.id as string,
+          type: "technology" as const,
+          title: t.name as string,
+          description: (t.description as string) ?? null,
+          slug: t.slug as string,
+          url: `/tech/${t.slug}`,
+          icon_url: (t.icon_url as string) ?? null,
+          metadata: { tech_type: t.type, alias_match: true },
+        }]
+      }
+      if (entity_type === "tool") {
+        const { data: tool } = await supabase
+          .from("tools")
+          .select("id,name,slug,tagline,icon_url")
+          .eq("id", entity_id)
+          .eq("published", true)
+          .single()
+        if (!tool) return []
+        const t = tool as Record<string, unknown>
+        return [{
+          id: t.id as string,
+          type: "tool" as const,
+          title: t.name as string,
+          description: (t.tagline as string) ?? null,
+          slug: t.slug as string,
+          url: `/tools/${t.slug}`,
+          icon_url: (t.icon_url as string) ?? null,
+          metadata: { alias_match: true },
+        }]
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+
+  private async runSearch(
+    cleaned: string,
+    opts?: { types?: string[]; limit?: number; page?: number }
+  ): Promise<SearchResponse> {
     const supabase = await createServiceClient()
     const limit = opts?.limit ?? 20
     const wantType = (t: string) => !opts?.types || opts.types.includes(t)
@@ -200,8 +298,8 @@ class PostgresSearchService implements ISearchService {
     return {
       results: results.slice(0, limit),
       total: results.length,
-      query,
-      took_ms: Date.now() - start,
+      query: cleaned,
+      took_ms: 0,
       grouped,
     }
   }

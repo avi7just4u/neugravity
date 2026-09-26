@@ -5,7 +5,7 @@
 -- ============================================================
 
 INSERT INTO public.sources (
-  name, domain, website_url, feed_url, description,
+  name, domain, base_url, feed_url, notes,
   source_type, trust_level, trust_level_label, source_priority,
   category, active, poll_interval_seconds, health_status,
   failure_count, items_discovered
@@ -153,7 +153,7 @@ ON CONFLICT (domain) DO UPDATE SET
   trust_level_label = EXCLUDED.trust_level_label,
   source_priority   = EXCLUDED.source_priority,
   category          = EXCLUDED.category,
-  description       = EXCLUDED.description,
+  notes             = EXCLUDED.notes,
   poll_interval_seconds = EXCLUDED.poll_interval_seconds;
 
 SELECT

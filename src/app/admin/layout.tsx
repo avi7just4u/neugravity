@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { createClient, createAdminClient } from "@/lib/supabase/server"
-import { AdminSidebar } from "@/components/layout/admin-sidebar"
+import { AdminShell } from "@/components/layout/admin-shell"
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s | NeuGravity Admin" },
@@ -18,24 +18,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const svc = createAdminClient()
   const { data: profile } = await svc
     .from("users")
-    .select("role")
+    .select("role, display_name")
     .eq("id", user.id)
     .single()
 
-  const role: string = (profile as { role: string } | null)?.role ?? "user"
+  const role: string = (profile as { role: string; display_name: string | null } | null)?.role ?? "user"
   const adminRoles = ["admin", "super_admin", "editor", "author", "reviewer", "analyst", "course_manager", "community_moderator"]
   if (!adminRoles.includes(role)) {
     redirect("/?error=unauthorized")
   }
 
+  const { data: { user: authUser } } = await svc.auth.admin.getUserById(user.id)
+  const email = authUser?.email ?? ""
+  const rawDisplayName = (profile as { role: string; display_name: string | null } | null)?.display_name
+  const displayName = rawDisplayName ?? email.split("@")[0] ?? "Admin"
+
   return (
-    <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 overflow-hidden">
-      <AdminSidebar userRole={role} />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6 md:p-8 max-w-screen-2xl">
-          {children}
-        </div>
-      </main>
-    </div>
+    <AdminShell userRole={role} userEmail={email} displayName={displayName}>
+      {children}
+    </AdminShell>
   )
 }

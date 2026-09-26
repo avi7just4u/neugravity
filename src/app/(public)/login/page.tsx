@@ -1,17 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Zap, Globe } from "lucide-react"
+import { Zap } from "lucide-react"
+import { Suspense } from "react"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const callbackError = searchParams.get("error")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -25,12 +29,21 @@ export default function LoginPage() {
       })
       if (!res.ok) {
         const d = await res.json()
-        setError(d.error ?? "Login failed.")
+        const msg = d.error ?? "Login failed."
+        if (msg.toLowerCase().includes("invalid login credentials")) {
+          setError("Invalid email or password.")
+        } else if (msg.toLowerCase().includes("email not confirmed")) {
+          setError("Please verify your email before signing in.")
+        } else {
+          setError(msg)
+        }
       } else {
-        router.push("/")
+        const redirect = searchParams.get("redirect") ?? "/admin"
+        router.push(redirect)
+        router.refresh()
       }
     } catch {
-      setError("An unexpected error occurred.")
+      setError("Network error. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -51,25 +64,11 @@ export default function LoginPage() {
         </div>
 
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm space-y-4">
-          {error && (
+          {(error || callbackError) && (
             <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
-              {error}
+              {error ?? (callbackError === "auth_callback_failed" ? "Authentication failed. Please try again." : callbackError)}
             </div>
           )}
-
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-2 h-10 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-          >
-            <Globe className="h-4 w-4" />
-            Continue with Google
-          </button>
-
-          <div className="flex items-center gap-3 text-xs text-zinc-400">
-            <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
-            or
-            <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
@@ -103,5 +102,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

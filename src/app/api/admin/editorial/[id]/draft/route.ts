@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient, createAdminClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server"
+import { requireAdminAuth } from "@/lib/auth/admin-auth"
+import { AuditService } from "@/lib/services/audit.service"
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await createClient()
-  const { data: { user } } = await auth.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const authResult = await requireAdminAuth(["admin", "super_admin", "editor", "author"])
+  if (authResult instanceof NextResponse) return authResult
+  const { userId, email } = authResult
 
   const { id } = await params
   const body = await request.json()
@@ -43,6 +45,16 @@ export async function PATCH(
   if (Object.keys(updateNews).length > 0) {
     await db.from("news_items").update(updateNews).eq("source_item_id", id)
   }
+
+  await AuditService.log({
+    actor_id: userId,
+    actor_email: email,
+    action: "edit",
+    entity_type: "source_item",
+    entity_id: id,
+    summary: `Edited draft for source item ${id}`,
+    metadata: { fields: Object.keys(body) },
+  })
 
   return NextResponse.json({ saved: true })
 }

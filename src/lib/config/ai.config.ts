@@ -4,6 +4,7 @@ export const AI_CONFIG = {
   classificationModel: process.env.AI_CLASSIFICATION_MODEL ?? "claude-haiku-4-5-20251001",
   entityModel: process.env.AI_ENTITY_MODEL ?? "claude-haiku-4-5-20251001",
   openRouterModel: process.env.AI_OPENROUTER_MODEL ?? "google/gemini-flash-1.5",
+  groqModel: process.env.AI_GROQ_MODEL ?? "qwen/qwen3.8-27b",
   provider: process.env.AI_PROVIDER ?? "auto",
   maxTokens: {
     summary: 300,
@@ -17,28 +18,30 @@ export const AI_CONFIG = {
     entityExtraction: 0.2,
     tagGeneration: 0.3,
   },
-  isPlaceholderKey(): boolean {
-    const key = process.env.ANTHROPIC_API_KEY ?? ""
-    return !key || key.startsWith("sk-ant-placeholder") || key === "placeholder" || key === "sk-ant-..."
-  },
   isConfigured(): boolean {
     const anthropic = process.env.ANTHROPIC_API_KEY ?? ""
     const openRouter = process.env.OPENROUTER_API_KEY ?? ""
+    const groq = process.env.GROQ_API_KEY ?? ""
     const anthropicReal = !!anthropic && !anthropic.startsWith("sk-ant-placeholder") && anthropic !== "placeholder" && anthropic !== "sk-ant-..."
     const openRouterReal = !!openRouter && openRouter !== "placeholder"
-    return anthropicReal || openRouterReal
+    const groqReal = !!groq && groq !== "placeholder"
+    return anthropicReal || openRouterReal || groqReal
   },
-  resolvedProvider(): "anthropic" | "openrouter" | null {
+  resolvedProvider(): "anthropic" | "openrouter" | "groq" | null {
     const anthropic = process.env.ANTHROPIC_API_KEY ?? ""
     const openRouter = process.env.OPENROUTER_API_KEY ?? ""
+    const groq = process.env.GROQ_API_KEY ?? ""
     const anthropicReal = !!anthropic && !anthropic.startsWith("sk-ant-placeholder") && anthropic !== "placeholder" && anthropic !== "sk-ant-..."
     const openRouterReal = !!openRouter && openRouter !== "placeholder"
+    const groqReal = !!groq && groq !== "placeholder"
     const pref = process.env.AI_PROVIDER ?? "auto"
 
     if (pref === "anthropic") return anthropicReal ? "anthropic" : null
     if (pref === "openrouter") return openRouterReal ? "openrouter" : null
-    // auto: prefer anthropic, fall back to openrouter
+    if (pref === "groq") return groqReal ? "groq" : null
+    // auto: prefer anthropic, then groq, then openrouter
     if (anthropicReal) return "anthropic"
+    if (groqReal) return "groq"
     if (openRouterReal) return "openrouter"
     return null
   },

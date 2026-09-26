@@ -4,7 +4,7 @@ import { PROMPTS, PROMPT_VERSION } from "@/lib/ai/prompts"
 
 export class AINotConfiguredError extends Error {
   constructor() {
-    super("AI_NOT_CONFIGURED: No AI provider is configured. Set ANTHROPIC_API_KEY or OPENROUTER_API_KEY.")
+    super("AI_NOT_CONFIGURED: No AI provider is configured. Set ANTHROPIC_API_KEY, GROQ_API_KEY, or OPENROUTER_API_KEY.")
     this.name = "AINotConfiguredError"
   }
 }
@@ -25,18 +25,27 @@ async function callClaude(
 
   const maxTokens = AI_CONFIG.maxTokens[task] ?? 512
 
-  if (provider === "openrouter") {
-    const openRouterModel = AI_CONFIG.openRouterModel
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  if (provider === "groq" || provider === "openrouter") {
+    const isGroq = provider === "groq"
+    const apiKey = isGroq ? process.env.GROQ_API_KEY : process.env.OPENROUTER_API_KEY
+    const apiModel = isGroq ? AI_CONFIG.groqModel : AI_CONFIG.openRouterModel
+    const baseUrl = isGroq
+      ? "https://api.groq.com/openai/v1/chat/completions"
+      : "https://openrouter.ai/api/v1/chat/completions"
+    const headers: Record<string, string> = {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    }
+    if (!isGroq) {
+      headers["HTTP-Referer"] = "https://neugravity.vercel.app"
+      headers["X-Title"] = "NeuGravity"
+    }
+
+    const res = await fetch(baseUrl, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://neugravity.vercel.app",
-        "X-Title": "NeuGravity",
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
-        model: openRouterModel,
+        model: apiModel,
         messages: [
           { role: "system", content: "You are a helpful AI assistant for NeuGravity, a tech intelligence platform." },
           { role: "user", content: prompt },
@@ -46,7 +55,7 @@ async function callClaude(
     })
     if (!res.ok) {
       const body = await res.text()
-      throw new Error(`OpenRouter error ${res.status}: ${body}`)
+      throw new Error(`${isGroq ? "Groq" : "OpenRouter"} error ${res.status}: ${body}`)
     }
     const json = await res.json()
     const text: string = json.choices?.[0]?.message?.content ?? ""

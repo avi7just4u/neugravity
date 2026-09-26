@@ -3,6 +3,7 @@ import Link from "next/link"
 import { createAdminClient } from "@/lib/supabase/server"
 import { Clock, ExternalLink, CheckCircle, XCircle, Eye } from "lucide-react"
 import { EditorialActions } from "./editorial-actions"
+import { PageHeader } from "@/components/admin"
 
 export const metadata: Metadata = { title: "Editorial Queue" }
 export const dynamic = "force-dynamic"
@@ -89,10 +90,10 @@ export default async function EditorialPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Editorial Queue</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Review and approve discovered content before publishing</p>
-      </div>
+      <PageHeader
+        title="Editorial Queue"
+        description="News items awaiting human review"
+      />
 
       <div className="flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
         {STATUS_TABS.map((tab) => (

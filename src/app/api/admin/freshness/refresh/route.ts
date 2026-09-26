@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { createAdminClient } from "@/lib/supabase/server"
 import { FreshnessService } from "@/lib/services/freshness.service"
+import { requireAdminAuth } from "@/lib/auth/admin-auth"
+import { AuditService } from "@/lib/services/audit.service"
 
 export async function POST() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-  const db = createAdminClient()
-  const { data: profile } = await db.from("user_profiles").select("role").eq("id", user.id).maybeSingle()
-  const role = profile?.role ?? "user"
-  if (!["admin", "super_admin", "editor"].includes(role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
+  const authResult = await requireAdminAuth(["admin", "super_admin", "editor"])
+  if (authResult instanceof NextResponse) return authResult
+  const { userId, email } = authResult
 
   const result = await FreshnessService.scheduleOverdueRefreshes()
+
+  await AuditService.log({
+    actor_id: userId,
+    actor_email: email,
+    action: "run_freshness_refresh",
+    entity_type: "system",
+    summary: "Triggered freshness refresh for overdue items",
+    metadata: typeof result === "object" ? (result as Record<string, unknown>) : { result },
+  })
+
   return NextResponse.json(result)
 }

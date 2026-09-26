@@ -89,6 +89,8 @@ export interface Technology {
   trending_score: number
   seo_title: string | null
   seo_description: string | null
+  short_definition: string | null
+  maturity: "emerging" | "growing" | "mature" | "declining" | "legacy" | null
   published: boolean
   featured: boolean
   verified: boolean
@@ -594,6 +596,78 @@ export interface PaginatedResponse<T> {
   total_pages: number
 }
 
+// Phase 4.1 — Knowledge Graph + Understand Engine
+
+export type ExplanationType = 'quick' | 'simple' | 'beginner' | 'technical' | 'architect'
+
+export type RelationshipType =
+  | 'RELATED_TO' | 'DEPENDS_ON' | 'PART_OF' | 'USES' | 'IMPLEMENTS'
+  | 'ALTERNATIVE_TO' | 'COMPETES_WITH' | 'BUILT_BY' | 'MAINTAINED_BY' | 'CREATED_BY'
+  | 'INTEGRATES_WITH' | 'USED_BY' | 'MENTIONED_IN' | 'EXPLAINED_BY' | 'COVERED_BY'
+  | 'COMPARED_WITH' | 'RELEVANT_TO'
+
+export interface TechnologyExplanation {
+  id: string
+  technology_id: string
+  explanation_type: ExplanationType
+  title: string | null
+  content: string
+  status: 'draft' | 'in_review' | 'approved' | 'published' | 'archived'
+  version: number
+  generated_by: 'ai' | 'editor' | 'import' | null
+  reviewed_by: string | null
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EntityRelationship {
+  id: string
+  source_entity_type: string
+  source_entity_id: string
+  target_entity_type: string
+  target_entity_id: string
+  relationship_type: RelationshipType
+  weight: number
+  confidence: number
+  source: string | null
+  source_url: string | null
+  created_by: string | null
+  created_by_type: 'editor' | 'system' | 'ai' | null
+  verified: boolean
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EntityAlias {
+  id: string
+  entity_type: string
+  entity_id: string
+  alias: string
+  normalized_alias: string
+  created_at: string
+}
+
+export interface TechnologyWithRelations extends Technology {
+  explanations: Partial<Record<ExplanationType, TechnologyExplanation>>
+  prerequisites: Technology[]
+  next_concepts: Technology[]
+  related_tools: Tool[]
+  related_companies: Company[]
+  related_news: NewsItem[]
+  related_comparisons: Comparison[]
+}
+
+export interface EntitySearchResult {
+  id: string
+  entity_type: string
+  name: string
+  slug: string
+  description: string | null
+  url: string
+}
+
 // SEO
 export interface SEOMeta {
   title: string
@@ -673,6 +747,7 @@ export interface SourceItem {
   metadata: Record<string, unknown> | null
   discovered_at: string
   duplicate_of: string | null
+  editorial_priority: "high" | "medium" | "low" | null
   error_message: string | null
   created_at: string
   updated_at: string

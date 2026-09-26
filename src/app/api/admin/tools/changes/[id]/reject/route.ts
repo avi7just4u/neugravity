@@ -1,16 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 import { ToolRefreshService } from "@/lib/services/tool-refresh.service"
+import { requireAdminAuth } from "@/lib/auth/admin-auth"
+import { AuditService } from "@/lib/services/audit.service"
 
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const authResult = await requireAdminAuth(["admin", "super_admin", "editor"])
+  if (authResult instanceof NextResponse) return authResult
+  const { userId, email } = authResult
 
-  await ToolRefreshService.rejectChange(id, user.id)
+  const { id } = await params
+  await ToolRefreshService.rejectChange(id, userId)
+
+  await AuditService.log({
+    actor_id: userId,
+    actor_email: email,
+    action: "reject",
+    entity_type: "tool_change",
+    entity_id: id,
+    summary: `Rejected tool change ${id}`,
+  })
+
   return NextResponse.json({ ok: true })
 }

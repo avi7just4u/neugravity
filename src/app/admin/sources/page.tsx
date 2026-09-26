@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Globe, Clock, AlertCircle, CheckCircle, XCircle, Rss, ShieldCheck } from "lucide-react"
 import { SourceActions } from "./source-actions"
+import { PageHeader } from "@/components/admin"
 
 export const metadata: Metadata = { title: "Sources" }
 export const dynamic = "force-dynamic"
@@ -84,24 +85,19 @@ export default async function SourcesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Sources</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            {activeCount} active · {sources.length} total
-            {unverifiedCount > 0 && (
-              <span className="ml-2 text-amber-600 dark:text-amber-400">· {unverifiedCount} pending verification</span>
-            )}
-          </p>
-        </div>
-        <Link
-          href="/admin/sources/new"
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-lg hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Add Source
-        </Link>
-      </div>
+      <PageHeader
+        title="Sources"
+        description={`RSS feeds and content sources · ${activeCount} active · ${sources.length} total${unverifiedCount > 0 ? ` · ${unverifiedCount} pending verification` : ""}`}
+        actions={
+          <Link
+            href="/admin/sources/new"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-lg hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add Source
+          </Link>
+        }
+      />
 
       {/* Category filter */}
       <div className="flex gap-2 flex-wrap">

@@ -31,6 +31,10 @@ export const IngestionService = {
 
     for (const item of items) {
       try {
+        const editorial_priority = source.trust_level >= 9 ? 'high'
+          : source.trust_level <= 5 ? 'low'
+          : 'medium'
+
         const { isDuplicate, item: saved } = await SourceService.upsertSourceItem({
           source_id,
           external_id: item.external_id,
@@ -43,6 +47,7 @@ export const IngestionService = {
           content_type: item.content_type,
           raw_payload: item.raw_payload,
           metadata: item.metadata ?? null,
+          editorial_priority,
         })
 
         if (isDuplicate) {

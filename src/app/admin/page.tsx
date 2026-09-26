@@ -1,9 +1,11 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { createAdminClient } from "@/lib/supabase/server"
 import {
-  Inbox, Eye, Send, AlertTriangle, XCircle, Clock, Rss, TrendingUp, Search,
+  Clock, AlertCircle, AlertTriangle, CheckCircle, Rss,
+  BrainCircuit, ListChecks, Radar, Loader, TrendingUp, Search,
+  Wrench, GitPullRequest, Activity,
 } from "lucide-react"
+import { PageHeader, StatCard, EmptyState } from "@/components/admin"
 
 export const metadata: Metadata = { title: "Dashboard" }
 export const dynamic = "force-dynamic"
@@ -14,6 +16,8 @@ async function getDashboardStats() {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const todayIso = today.toISOString()
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
 
     const [
       newDiscoveries,
@@ -25,20 +29,43 @@ async function getDashboardStats() {
       queueBacklog,
       failedSources,
       opportunities,
+      stuckItems,
+      activeSources,
+      toolsVerifiedToday,
+      toolChangesReview,
+      incidentUpdatesToday,
     ] = await Promise.all([
-      db.from("source_items").select("id", { count: "exact" }).eq("processing_status", "ready_for_review").gte("discovered_at", todayIso).limit(0),
-      db.from("source_items").select("id", { count: "exact" }).eq("processing_status", "ready_for_review").limit(0),
-      db.from("news_items").select("id", { count: "exact" }).eq("status", "published").gte("published_at", todayIso).limit(0),
-      db.from("articles").select("id", { count: "exact" }).eq("status", "published").gte("published_at", todayIso).limit(0),
-      db.from("status_incidents").select("id", { count: "exact" }).is("resolved_at", null).limit(0),
-      db.from("jobs").select("id", { count: "exact" }).in("status", ["failed", "dead_lettered"]).limit(0),
-      db.from("jobs").select("id", { count: "exact" }).in("status", ["queued", "retrying"]).limit(0),
-      db.from("sources").select("id", { count: "exact" }).eq("health_status", "failed").limit(0),
+      db.from("source_items").select("id", { count: "exact", head: true }).eq("processing_status", "ready_for_review").gte("discovered_at", todayIso),
+      db.from("source_items").select("id", { count: "exact", head: true }).eq("processing_status", "ready_for_review"),
+      db.from("news_items").select("id", { count: "exact", head: true }).eq("status", "published").gte("published_at", todayIso),
+      db.from("articles").select("id", { count: "exact", head: true }).eq("status", "published").gte("published_at", todayIso),
+      db.from("status_incidents").select("id", { count: "exact", head: true }).is("resolved_at", null),
+      db.from("jobs").select("id", { count: "exact", head: true }).in("status", ["failed", "dead_lettered"]),
+      db.from("jobs").select("id", { count: "exact", head: true }).in("status", ["queued", "retrying"]),
+      db.from("sources").select("id", { count: "exact", head: true }).eq("health_status", "failed"),
       db.from("analytics_events")
         .select("metadata")
         .eq("event_type", "search")
         .limit(200),
+      db.from("source_items").select("id", { count: "exact", head: true }).eq("processing_status", "enriching").lte("updated_at", thirtyMinsAgo),
+      db.from("sources").select("id", { count: "exact", head: true }).eq("active", true),
+      db.from("tools").select("id", { count: "exact", head: true }).eq("is_demo", false).gte("last_verified_at", todayIso),
+      db.from("tool_change_events").select("id", { count: "exact", head: true }).eq("verification_status", "pending"),
+      db.from("status_updates").select("id", { count: "exact", head: true }).gte("created_at", todayIso),
     ])
+
+    // ai_generations may not exist — try separately
+    let aiFailed = 0
+    try {
+      const { count } = await db
+        .from("ai_generations")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "failed")
+        .gte("created_at", last24h)
+      aiFailed = count ?? 0
+    } catch {
+      aiFailed = 0
+    }
 
     // Compute zero-result searches from raw analytics
     const zeroResultQueries: Record<string, number> = {}
@@ -62,12 +89,20 @@ async function getDashboardStats() {
       failedJobs: failedJobs.count ?? 0,
       queueBacklog: queueBacklog.count ?? 0,
       failedSources: failedSources.count ?? 0,
+      stuckItems: stuckItems.count ?? 0,
+      activeSources: activeSources.count ?? 0,
+      toolsVerifiedToday: toolsVerifiedToday.count ?? 0,
+      toolChangesReview: toolChangesReview.count ?? 0,
+      incidentUpdatesToday: incidentUpdatesToday.count ?? 0,
+      aiFailed,
       topOpportunities,
     }
   } catch {
     return {
       newDiscoveries: 0, needsReview: 0, publishedToday: 0, activeIncidents: 0,
-      failedJobs: 0, queueBacklog: 0, failedSources: 0, topOpportunities: [],
+      failedJobs: 0, queueBacklog: 0, failedSources: 0, stuckItems: 0,
+      activeSources: 0, toolsVerifiedToday: 0, toolChangesReview: 0,
+      incidentUpdatesToday: 0, aiFailed: 0, topOpportunities: [],
     }
   }
 }
@@ -75,87 +110,146 @@ async function getDashboardStats() {
 export default async function AdminDashboard() {
   const stats = await getDashboardStats()
 
-  const cards = [
-    { label: "New Discoveries", value: stats.newDiscoveries, icon: Inbox, href: "/admin/editorial?status=ready_for_review", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950" },
-    { label: "Needs Review", value: stats.needsReview, icon: Eye, href: "/admin/editorial", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-950" },
-    { label: "Published Today", value: stats.publishedToday, icon: Send, href: "/admin/content/news", color: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-950" },
-    { label: "Active Incidents", value: stats.activeIncidents, icon: AlertTriangle, href: "/admin/system/incidents", color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950" },
-    { label: "Failed Jobs", value: stats.failedJobs, icon: XCircle, href: "/admin/system/jobs?status=failed", color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950" },
-    { label: "Queue Backlog", value: stats.queueBacklog, icon: Clock, href: "/admin/system/jobs?status=queued", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-950" },
-    { label: "Failed Sources", value: stats.failedSources, icon: Rss, href: "/admin/sources?health=failed", color: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-950" },
-  ]
+  const attentionItems = [
+    stats.needsReview > 0 && { key: "needsReview", label: "Awaiting Review", value: stats.needsReview, icon: <Clock className="h-5 w-5" />, color: "warning" as const, href: "/admin/editorial" },
+    stats.failedJobs > 0 && { key: "failedJobs", label: "Failed Jobs", value: stats.failedJobs, icon: <AlertCircle className="h-5 w-5" />, color: "danger" as const, href: "/admin/system/jobs" },
+    stats.failedSources > 0 && { key: "failedSources", label: "Source Failures", value: stats.failedSources, icon: <Rss className="h-5 w-5" />, color: "danger" as const, href: "/admin/sources" },
+    stats.activeIncidents > 0 && { key: "activeIncidents", label: "Active Incidents", value: stats.activeIncidents, icon: <AlertTriangle className="h-5 w-5" />, color: "warning" as const, href: "/admin/system/health" },
+    stats.aiFailed > 0 && { key: "aiFailed", label: "AI Failures", value: stats.aiFailed, icon: <BrainCircuit className="h-5 w-5" />, color: "danger" as const, href: "/admin/system/ai" },
+    stats.stuckItems > 0 && { key: "stuckItems", label: "Stuck Items", value: stats.stuckItems, icon: <Loader className="h-5 w-5" />, color: "warning" as const, href: "/admin/system/jobs" },
+  ].filter(Boolean) as { key: string; label: string; value: number; icon: React.ReactNode; color: 'warning' | 'danger'; href: string }[]
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Dashboard</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Content operating system overview</p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description="Operations overview and system status"
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {cards.map((card) => {
-          const Icon = card.icon
-          return (
-            <Link
-              key={card.label}
-              href={card.href}
-              className="flex flex-col gap-3 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:shadow-sm hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
-            >
-              <div className={`flex items-center justify-center h-9 w-9 rounded-lg ${card.bg} ${card.color}`}>
-                <Icon className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-zinc-900 dark:text-white">{card.value}</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400">{card.label}</div>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">Content Pipeline</h2>
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 divide-y divide-zinc-100 dark:divide-zinc-800">
-            {[
-              { label: "Awaiting discovery", href: "/admin/sources", value: "→ Sources" },
-              { label: "Ready for review", href: "/admin/editorial", value: stats.needsReview },
-              { label: "Active incidents", href: "/admin/system/incidents", value: stats.activeIncidents },
-              { label: "Jobs in queue", href: "/admin/system/jobs", value: stats.queueBacklog },
-            ].map((row) => (
-              <Link key={row.label} href={row.href} className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">{row.label}</span>
-                <span className="text-sm font-semibold text-zinc-900 dark:text-white">{row.value}</span>
-              </Link>
+      {/* Section 1: Attention Required */}
+      <section>
+        <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+          Attention Required
+        </h2>
+        {attentionItems.length === 0 ? (
+          <EmptyState
+            icon={<CheckCircle className="h-5 w-5" />}
+            title="All Systems Operational"
+            description="No items need your attention right now."
+          />
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {attentionItems.map((item) => (
+              <StatCard
+                key={item.key}
+                label={item.label}
+                value={item.value}
+                icon={item.icon}
+                color={item.color}
+                href={item.href}
+                attention
+              />
             ))}
           </div>
-        </div>
+        )}
+      </section>
 
-        <div>
+      {/* Section 2: Live Operations */}
+      <section>
+        <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
+          Live Operations
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <StatCard
+            label="Discovered Today"
+            value={stats.newDiscoveries}
+            icon={<Radar className="h-5 w-5" />}
+            color="info"
+          />
+          <StatCard
+            label="Published Today"
+            value={stats.publishedToday}
+            icon={<CheckCircle className="h-5 w-5" />}
+            color="success"
+          />
+          <StatCard
+            label="Queue Backlog"
+            value={stats.queueBacklog}
+            icon={<ListChecks className="h-5 w-5" />}
+            color="default"
+          />
+          <StatCard
+            label="Active Sources"
+            value={stats.activeSources}
+            icon={<Rss className="h-5 w-5" />}
+            color="default"
+            href="/admin/sources"
+          />
+          <StatCard
+            label="Tools Verified Today"
+            value={stats.toolsVerifiedToday}
+            icon={<Wrench className="h-5 w-5" />}
+            color="success"
+            href="/admin/content/tools"
+          />
+          <StatCard
+            label="Tool Changes Pending"
+            value={stats.toolChangesReview}
+            icon={<GitPullRequest className="h-5 w-5" />}
+            color={stats.toolChangesReview > 0 ? "warning" : "default"}
+            attention={stats.toolChangesReview > 0}
+            href="/admin/content/tools/changes"
+          />
+          <StatCard
+            label="Incident Updates Today"
+            value={stats.incidentUpdatesToday}
+            icon={<Activity className="h-5 w-5" />}
+            color="info"
+            href="/admin/system/health"
+          />
+        </div>
+      </section>
+
+      {/* Section 3: Content Opportunities */}
+      {stats.topOpportunities.length > 0 && (
+        <section>
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="h-4 w-4 text-zinc-400" />
-            <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Content Opportunities</h2>
+            <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              Content Opportunities
+            </h2>
           </div>
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-            {stats.topOpportunities.length === 0 ? (
-              <div className="px-4 py-8 text-center">
-                <Search className="h-8 w-8 text-zinc-200 dark:text-zinc-700 mx-auto mb-2" />
-                <p className="text-sm text-zinc-400">No search gaps detected yet</p>
-                <p className="text-xs text-zinc-300 dark:text-zinc-600 mt-1">Zero-result searches will appear here</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                {stats.topOpportunities.map(({ query, count }) => (
-                  <div key={query} className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300 font-mono">{query}</span>
-                    <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">{count}×</span>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden max-w-md">
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {stats.topOpportunities.map(({ query, count }) => (
+                <div key={query} className="flex items-center justify-between px-4 py-3">
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300 font-mono">{query}</span>
+                  <span className="text-xs text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">{count}×</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
+      )}
+
+      {/* Zero-result placeholder when no opportunities yet */}
+      {stats.topOpportunities.length === 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="h-4 w-4 text-zinc-400" />
+            <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              Content Opportunities
+            </h2>
+          </div>
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 max-w-md">
+            <div className="px-4 py-8 text-center">
+              <Search className="h-8 w-8 text-zinc-200 dark:text-zinc-700 mx-auto mb-2" />
+              <p className="text-sm text-zinc-400">No search gaps detected yet</p>
+              <p className="text-xs text-zinc-300 dark:text-zinc-600 mt-1">Zero-result searches will appear here</p>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

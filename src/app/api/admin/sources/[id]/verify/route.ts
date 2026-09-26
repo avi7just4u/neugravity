@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
+import { requireAdminAuth } from "@/lib/auth/admin-auth"
+import { AuditService } from "@/lib/services/audit.service"
 
 const XML_CONTENT_TYPES = [
   "application/rss+xml",
@@ -8,7 +10,9 @@ const XML_CONTENT_TYPES = [
   "text/xml",
 ]
 
-async function fetchAndValidateFeed(url: string): Promise<{ ok: boolean; error?: string; itemCount?: number }> {
+async function fetchAndValidateFeed(
+  url: string
+): Promise<{ ok: boolean; error?: string; itemCount?: number }> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": "NeuGravity-Verify/1.0" },
@@ -21,7 +25,9 @@ async function fetchAndValidateFeed(url: string): Promise<{ ok: boolean; error?:
     const body = await res.text()
 
     const looksLikeXml = body.trimStart().startsWith("<")
-    const isXmlContentType = XML_CONTENT_TYPES.some((ct) => contentType.includes(ct)) || contentType.includes("text/html")
+    const isXmlContentType =
+      XML_CONTENT_TYPES.some((ct) => contentType.includes(ct)) ||
+      contentType.includes("text/html")
 
     if (!looksLikeXml && !isXmlContentType) {
       return { ok: false, error: `Unexpected content-type: ${contentType}` }
@@ -31,8 +37,9 @@ async function fetchAndValidateFeed(url: string): Promise<{ ok: boolean; error?:
       return { ok: false, error: "Response body does not look like XML" }
     }
 
-    // Count items to confirm it's a real feed
-    const itemCount = (body.match(/<item[\s>]/gi) ?? []).length + (body.match(/<entry[\s>]/gi) ?? []).length
+    const itemCount =
+      (body.match(/<item[\s>]/gi) ?? []).length +
+      (body.match(/<entry[\s>]/gi) ?? []).length
 
     return { ok: true, itemCount }
   } catch (err) {
@@ -44,6 +51,10 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authResult = await requireAdminAuth(["admin", "super_admin", "editor"])
+  if (authResult instanceof NextResponse) return authResult
+  const { userId, email } = authResult
+
   try {
     const { id } = await params
     const db = createAdminClient()
@@ -77,6 +88,16 @@ export async function POST(
         })
         .eq("id", id)
 
+      await AuditService.log({
+        actor_id: userId,
+        actor_email: email,
+        action: "verify_source",
+        entity_type: "source",
+        entity_id: id,
+        summary: `Verified source ${id}: healthy (${result.itemCount ?? 0} items)`,
+        metadata: { ok: true, itemCount: result.itemCount },
+      })
+
       return NextResponse.json({ ok: true, active: true, itemCount: result.itemCount })
     } else {
       await db
@@ -87,6 +108,16 @@ export async function POST(
           last_error_at: new Date().toISOString(),
         })
         .eq("id", id)
+
+      await AuditService.log({
+        actor_id: userId,
+        actor_email: email,
+        action: "verify_source",
+        entity_type: "source",
+        entity_id: id,
+        summary: `Verified source ${id}: failed — ${result.error}`,
+        metadata: { ok: false, error: result.error },
+      })
 
       return NextResponse.json({ ok: false, error: result.error })
     }
