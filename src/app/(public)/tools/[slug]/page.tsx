@@ -82,6 +82,10 @@ function AlternativeCard({ tool }: { tool: Tool }) {
 }
 
 function buildToolJsonLd(tool: Tool, url: string) {
+  const ratingAvg = tool.rating_average != null ? Number(tool.rating_average) : null
+  const ratingCount = tool.rating_count != null ? Number(tool.rating_count) : 0
+  const hasValidRating = ratingAvg != null && !isNaN(ratingAvg) && ratingCount > 0
+
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -93,12 +97,12 @@ function buildToolJsonLd(tool: Tool, url: string) {
     ...(tool.pricing_model === "free" || tool.pricing_model === "open_source" || tool.has_free_tier
       ? { offers: { "@type": "Offer", price: "0", priceCurrency: "USD" } }
       : {}),
-    ...(tool.rating_average != null && tool.rating_count > 0
+    ...(hasValidRating
       ? {
           aggregateRating: {
             "@type": "AggregateRating",
-            ratingValue: tool.rating_average.toFixed(1),
-            ratingCount: tool.rating_count,
+            ratingValue: ratingAvg!.toFixed(1),
+            ratingCount,
             bestRating: "5",
           },
         }
