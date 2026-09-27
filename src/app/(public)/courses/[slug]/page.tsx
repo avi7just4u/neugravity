@@ -1,4 +1,4 @@
-export const revalidate = 300
+export const dynamic = "force-dynamic"
 
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -104,7 +104,7 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
         <nav className="flex items-center gap-1.5 text-sm text-zinc-400 mb-8" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Home</Link>
           <ChevronRight className="h-3.5 w-3.5" />
@@ -290,6 +290,27 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
             </div>
           </aside>
         </div>
+      </div>
+
+      {/* Mobile sticky enrollment CTA */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-zinc-950/95 border-t border-zinc-200 dark:border-zinc-800 p-4 backdrop-blur-sm">
+        {isEnrolled ? (
+          <Button className="w-full" size="lg" asChild>
+            <Link
+              href={
+                continueLessonId
+                  ? `/courses/${slug}/lessons/${continueLessonId}`
+                  : firstLessonId
+                  ? `/courses/${slug}/lessons/${firstLessonId}`
+                  : `/courses/${slug}`
+              }
+            >
+              Continue Learning
+            </Link>
+          </Button>
+        ) : c.id ? (
+          <EnrollButton courseId={c.id} courseSlug={slug} isFree={isFree} firstLessonId={firstLessonId} />
+        ) : null}
       </div>
     </>
   )

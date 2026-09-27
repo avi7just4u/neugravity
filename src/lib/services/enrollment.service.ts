@@ -221,6 +221,21 @@ export const EnrollmentService = {
     }
   },
 
+  async updateEnrollmentStatus(userId: string, courseId: string, status: "active" | "completed" | "paused"): Promise<void> {
+    try {
+      const db = createAdminClient()
+      const updates: Record<string, unknown> = { status }
+      if (status === "completed") updates.completed_at = new Date().toISOString()
+      await db
+        .from("course_enrollments")
+        .update(updates)
+        .eq("user_id", userId)
+        .eq("course_id", courseId)
+    } catch {
+      // non-fatal
+    }
+  },
+
   // Server-side: get current user ID from session
   async getCurrentUserId(): Promise<string | null> {
     try {

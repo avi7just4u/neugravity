@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, AlertCircle, ExternalLink } from "lucide-react"
 
@@ -25,6 +26,7 @@ export function ProjectLesson({
   existingSubmission,
   onComplete,
 }: ProjectLessonProps) {
+  const router = useRouter()
   const [value, setValue] = useState(existingSubmission?.content ?? existingSubmission?.url ?? "")
   const [submitted, setSubmitted] = useState(Boolean(existingSubmission))
   const [loading, setLoading] = useState(false)
@@ -53,6 +55,7 @@ export function ProjectLesson({
         body: JSON.stringify({ status: "completed", progress_percent: 100 }),
       }).catch(() => {})
       onComplete()
+      router.refresh()
     } catch {
       setError("Network error. Please try again.")
     } finally {

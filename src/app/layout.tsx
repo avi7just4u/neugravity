@@ -27,26 +27,17 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://neugravity.com",
+    url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app",
     siteName: "NeuGravity",
     title: "NeuGravity — Understand Technology. Navigate What's Next.",
     description:
       "Learn technology, discover the right tools, understand how companies work, and stay ahead of what is changing.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "NeuGravity — Technology Intelligence Platform",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "NeuGravity — Understand Technology. Navigate What's Next.",
     description:
       "Learn technology, discover the right tools, understand how companies work, and stay ahead of what is changing.",
-    images: ["/og-image.png"],
     creator: "@neugravity",
     site: "@neugravity",
   },
@@ -62,10 +53,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://neugravity.com",
-    types: {
-      "application/rss+xml": "/rss.xml",
-    },
+    canonical: process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app",
   },
 }
 

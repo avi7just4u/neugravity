@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react"
 import type { QuizQuestion, Quiz } from "@/types"
@@ -23,6 +24,7 @@ interface QuizResult {
 }
 
 export function QuizLesson({ quiz, questions, lessonId, onComplete }: QuizLessonProps) {
+  const router = useRouter()
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({})
   const [submitted, setSubmitted] = useState(false)
   const [result, setResult] = useState<QuizResult | null>(null)
@@ -59,6 +61,7 @@ export function QuizLesson({ quiz, questions, lessonId, onComplete }: QuizLesson
           body: JSON.stringify({ status: "completed", progress_percent: 100 }),
         }).catch(() => {})
         onComplete()
+        router.refresh()
       }
     } catch {
       setError("Network error. Please try again.")

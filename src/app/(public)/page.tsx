@@ -139,19 +139,6 @@ export default async function HomePage() {
                 <Link href="/tools">Explore Tools</Link>
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-6 mt-12 pt-8 border-t border-zinc-100 dark:border-zinc-800">
-              {[
-                { value: "500+", label: "Technologies" },
-                { value: "1,200+", label: "Tools" },
-                { value: "200+", label: "Companies" },
-                { value: "50+", label: "Courses" },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <div className="text-2xl font-bold text-zinc-900 dark:text-white">{stat.value}</div>
-                  <div className="text-sm text-zinc-500 dark:text-zinc-400">{stat.label}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
         <div className="absolute top-0 right-0 -z-10 w-1/2 h-full overflow-hidden pointer-events-none" aria-hidden="true">
@@ -355,7 +342,7 @@ export default async function HomePage() {
             ] as const).map((path) => (
               <Link
                 key={path.slug}
-                href={`/learn/paths/${path.slug}`}
+                href={`/learn/${path.slug}`}
                 className="group flex flex-col gap-4 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900 hover:shadow-md transition-all"
               >
                 <div className="flex items-center justify-between">
@@ -395,13 +382,12 @@ export default async function HomePage() {
               </p>
               <div className="flex flex-wrap gap-2 mb-5">
                 {["Engineering", "Product", "Leadership", "Career", "Sales", "Finance"].map((topic) => (
-                  <Link
+                  <span
                     key={topic}
-                    href={`/work/${topic.toLowerCase()}`}
-                    className="px-3 py-1 text-sm rounded-full border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
+                    className="px-3 py-1 text-sm rounded-full border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400"
                   >
                     {topic}
-                  </Link>
+                  </span>
                 ))}
               </div>
               <Button variant="outline" asChild>

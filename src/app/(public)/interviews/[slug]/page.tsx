@@ -6,6 +6,8 @@ import { Mic2, Clock, Eye, ChevronRight } from "lucide-react"
 import { InterviewService } from "@/lib/services/interview.service"
 import { formatRelativeDate } from "@/lib/utils"
 
+export const dynamic = "force-dynamic"
+
 export function generateStaticParams() { return [] }
 
 export async function generateMetadata({

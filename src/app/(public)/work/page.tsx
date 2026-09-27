@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
-import { Briefcase, ArrowRight } from "lucide-react"
+import { Briefcase } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Inside Work",
@@ -43,11 +43,10 @@ export default function WorkPage() {
       <section className="mb-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {topics.map((t) => (
-            <Link key={t.slug} href={`/work/${t.slug}`} className="group flex flex-col gap-2 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all">
-              <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{t.name}</h2>
+            <div key={t.slug} className="flex flex-col gap-2 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+              <h2 className="font-semibold text-zinc-900 dark:text-white">{t.name}</h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">{t.description}</p>
-              <span className="text-xs text-zinc-400 flex items-center gap-1 group-hover:text-blue-500 transition-colors mt-auto">Explore <ArrowRight className="h-3 w-3" /></span>
-            </Link>
+            </div>
           ))}
         </div>
       </section>

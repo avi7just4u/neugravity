@@ -52,6 +52,17 @@ export function Navbar() {
     setMoreOpen(false)
   }
 
+  React.useEffect(() => {
+    function handleKeydown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    document.addEventListener("keydown", handleKeydown)
+    return () => document.removeEventListener("keydown", handleKeydown)
+  }, [])
+
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-zinc-200/80 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:border-zinc-800/80 dark:bg-zinc-950/95">
@@ -130,7 +141,7 @@ export function Navbar() {
               {/* Mobile menu toggle */}
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="flex items-center justify-center h-9 w-9 rounded-md border border-zinc-200 lg:hidden dark:border-zinc-700"
+                className="flex items-center justify-center h-11 w-11 rounded-md border border-zinc-200 lg:hidden dark:border-zinc-700"
                 aria-label={mobileOpen ? "Close menu" : "Open menu"}
                 aria-expanded={mobileOpen}
               >
@@ -155,6 +166,7 @@ export function Navbar() {
           <nav
             className="absolute right-0 top-0 h-full w-72 bg-white shadow-xl dark:bg-zinc-950 flex flex-col"
             aria-label="Mobile navigation"
+            aria-modal="true"
           >
             {/* Drawer header */}
             <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">

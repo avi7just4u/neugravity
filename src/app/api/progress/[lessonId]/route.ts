@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { EnrollmentService } from "@/lib/services/enrollment.service"
+import { createAdminClient } from "@/lib/supabase/server"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ lessonId: string }> }) {
   const userId = await EnrollmentService.getCurrentUserId()
@@ -38,6 +39,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ les
 
   if (!updated) {
     return NextResponse.json({ error: "Failed to update progress" }, { status: 500 })
+  }
+
+  // When a lesson is completed, check if the entire course is done
+  if (status === "completed") {
+    const db = createAdminClient()
+    const { data: lesson } = await db
+      .from("lessons")
+      .select("module_id")
+      .eq("id", lessonId)
+      .single()
+    if (lesson) {
+      const { data: module } = await db
+        .from("course_modules")
+        .select("course_id")
+        .eq("id", (lesson as { module_id: string }).module_id)
+        .single()
+      if (module) {
+        const courseId = (module as { course_id: string }).course_id
+        const progress = await EnrollmentService.getCourseProgress(userId, courseId)
+        if (progress.percent === 100 && progress.total_lessons > 0) {
+          await EnrollmentService.updateEnrollmentStatus(userId, courseId, "completed")
+        }
+      }
+    }
   }
 
   return NextResponse.json({ data: updated })

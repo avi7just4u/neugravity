@@ -210,6 +210,11 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
           <div className="flex-1 flex items-center gap-3 min-w-0">
             <div className="flex-1 h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
               <div
+                role="progressbar"
+                aria-valuenow={courseProgress.percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Course progress: ${courseProgress.percent}%`}
                 className="h-full rounded-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${courseProgress.percent}%` }}
               />
@@ -407,7 +412,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/courses/${slug}/lessons/${prevLesson.id}`}>
                       <ChevronLeft className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:block">Previous</span>
+                      <span>Previous</span>
                     </Link>
                   </Button>
                 ) : (
@@ -427,7 +432,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
                 {nextLesson ? (
                   <Button size="sm" asChild>
                     <Link href={`/courses/${slug}/lessons/${nextLesson.id}`}>
-                      <span className="hidden sm:block">Next</span>
+                      <span>Next</span>
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Link>
                   </Button>
