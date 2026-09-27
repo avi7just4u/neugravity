@@ -386,22 +386,32 @@ export interface ComparisonValue {
   updated_at: string
 }
 
+export type CourseStatus = "draft" | "review" | "approved" | "published" | "archived"
+export type LessonType = "video" | "article" | "interactive" | "quiz" | "assignment" | "project"
+export type CourseEntityRelationship = "TEACHES" | "COVERS" | "PREREQUISITE" | "APPLIES"
+
 export interface Course {
   id: string
   title: string
   slug: string
+  subtitle: string | null
   description: string | null
+  short_description: string | null
   long_description: string | null
   outcome: string | null
+  learning_outcomes: string[] | null
+  audience: string | null
   thumbnail_url: string | null
+  hero_image_url: string | null
   instructor_id: string | null
   category_id: string | null
   difficulty: DifficultyLevel | null
   estimated_hours: number | null
   price: number | null
   price_currency: string
-  status: "draft" | "published" | "archived"
+  status: CourseStatus
   featured: boolean
+  is_demo: boolean
   published_at: string | null
   seo_title: string | null
   seo_description: string | null
@@ -415,6 +425,7 @@ export interface Course {
   instructor?: Author | null
   category?: Category | null
   modules?: CourseModule[]
+  entities?: CourseEntity[]
 }
 
 export interface CourseModule {
@@ -424,6 +435,7 @@ export interface CourseModule {
   description: string | null
   sort_order: number
   created_at: string
+  updated_at: string
   lessons?: Lesson[]
 }
 
@@ -432,12 +444,103 @@ export interface Lesson {
   module_id: string
   title: string
   description: string | null
-  lesson_type: "video" | "article" | "interactive" | "quiz" | "assignment" | "project"
+  lesson_type: LessonType
   content: string | null
   video_url: string | null
   video_duration_seconds: number | null
+  learning_outcomes: string[] | null
   sort_order: number
   is_preview: boolean
+  status: "draft" | "review" | "published" | "archived"
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface LearningPath {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  short_description: string | null
+  outcome: string | null
+  hero_image_url: string | null
+  thumbnail_url: string | null
+  difficulty: DifficultyLevel | null
+  estimated_hours: number | null
+  career_outcomes: string[] | null
+  featured: boolean
+  is_demo: boolean
+  status: "draft" | "review" | "approved" | "published" | "archived"
+  published: boolean
+  created_at: string
+  updated_at: string
+  // Relations
+  steps?: LearningPathCourse[]
+}
+
+export interface LearningPathCourse {
+  id: string
+  learning_path_id: string
+  course_id: string
+  sort_order: number
+  is_required: boolean
+  description: string | null
+  created_at: string
+  // Relations
+  course?: Course | null
+}
+
+export interface CourseEntity {
+  id: string
+  course_id: string
+  entity_type: "technology" | "concept" | "tool" | "company" | "person"
+  entity_id: string
+  relationship_type: CourseEntityRelationship
+  sort_order: number
+  created_at: string
+}
+
+export interface CourseEnrollment {
+  id: string
+  user_id: string
+  course_id: string
+  status: "active" | "completed" | "refunded" | "paused"
+  enrolled_at: string
+  completed_at: string | null
+  payment_id: string | null
+}
+
+export interface LessonProgress {
+  id: string
+  user_id: string
+  lesson_id: string
+  status: "not_started" | "in_progress" | "completed"
+  progress_percent: number
+  video_position_seconds: number
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CourseProgress {
+  course_id: string
+  total_lessons: number
+  completed_lessons: number
+  percent: number
+  last_lesson_id: string | null
+}
+
+export interface CourseProject {
+  id: string
+  course_id: string
+  module_id: string | null
+  title: string
+  description: string | null
+  instructions: string | null
+  submission_type: "text" | "url" | "github" | "file"
+  technology_ids: string[] | null
+  sort_order: number
   created_at: string
   updated_at: string
 }

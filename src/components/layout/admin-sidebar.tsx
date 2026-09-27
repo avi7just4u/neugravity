@@ -108,10 +108,10 @@ const navSections: NavSection[] = [
     title: "EDUCATION",
     items: [
       {
-        label: "Courses",
-        href: "/admin/content/courses",
+        label: "Education",
+        href: "/admin/education",
         icon: <BookOpen className="h-4 w-4" />,
-        requiredRoles: ["admin", "super_admin", "course_manager"],
+        requiredRoles: ["admin", "super_admin", "course_manager", "editor"],
       },
     ],
   },

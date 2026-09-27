@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Globe, ChevronRight, GitBranch, BookOpen, ArrowRight, Network } from "lucide-react"
 import { TechnologyService } from "@/lib/services/technology.service"
+import { CourseService } from "@/lib/services/course.service"
 import { UnderstandTabs } from "@/components/tech/understand-tabs"
 import { ConceptFlow } from "@/components/tech/concept-flow"
 import { PrerequisiteCard } from "@/components/tech/prerequisite-card"
@@ -143,6 +144,11 @@ export default async function TechDetailPage({
   if (!tech) notFound()
 
   const flowNodes = TECH_FLOWS[slug] ?? []
+
+  const [learningCourses, learningPaths] = await Promise.all([
+    CourseService.getCoursesForTechnology(tech.id, 3),
+    CourseService.getLearningPathsForTechnology(tech.id, 2),
+  ])
 
   // Sort by canonical tab order so "30 Sec" is always the default (DB returns in arbitrary order)
   const EXPLANATION_ORDER: ExplanationType[] = ["quick", "simple", "beginner", "technical", "architect"]
@@ -440,6 +446,44 @@ export default async function TechDetailPage({
                         className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1"
                       >
                         {c.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Learn section */}
+            {(learningCourses.length > 0 || learningPaths.length > 0) && (
+              <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-zinc-900 dark:text-white text-sm">Learn {tech.name}</h3>
+                  <Link href="/learn" className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+                    All →
+                  </Link>
+                </div>
+                <ul className="space-y-2">
+                  {learningPaths.map((p) => (
+                    <li key={p.id}>
+                      <Link
+                        href={`/learn/${p.slug}`}
+                        className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+                      >
+                        <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                        <span className="line-clamp-1">{p.title}</span>
+                        <ArrowRight className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100 ml-auto transition-opacity" />
+                      </Link>
+                    </li>
+                  ))}
+                  {learningCourses.map((c) => (
+                    <li key={c.id}>
+                      <Link
+                        href={`/courses/${c.slug}`}
+                        className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+                      >
+                        <BookOpen className="h-3.5 w-3.5 shrink-0 text-zinc-300" />
+                        <span className="line-clamp-1">{c.title}</span>
+                        <ArrowRight className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100 ml-auto transition-opacity" />
                       </Link>
                     </li>
                   ))}
