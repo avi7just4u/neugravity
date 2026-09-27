@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Zap, Globe, GitBranch, Share2, Rss } from "lucide-react"
+import { Zap, Globe, GitBranch, Share2 } from "lucide-react"
 
 const footerLinks = {
   Platform: [
@@ -16,7 +16,7 @@ const footerLinks = {
     { label: "Inside Work", href: "/work" },
     { label: "Technology Status", href: "/status" },
     { label: "Community", href: "/community" },
-    { label: "Learning Paths", href: "/learn/paths" },
+    { label: "Learning Paths", href: "/learn" },
   ],
   Enterprise: [
     { label: "Enterprise Overview", href: "/enterprise" },
@@ -31,7 +31,6 @@ const footerLinks = {
     { label: "Contact", href: "/contact" },
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
-    { label: "RSS Feed", href: "/rss.xml" },
     { label: "Sitemap", href: "/sitemap.xml" },
   ],
 }
@@ -80,13 +79,6 @@ export function Footer() {
                 aria-label="NeuGravity on LinkedIn"
               >
                 <Globe className="h-4 w-4" />
-              </a>
-              <a
-                href="/rss.xml"
-                className="flex items-center justify-center h-8 w-8 rounded-md text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors dark:hover:text-white dark:hover:bg-zinc-800"
-                aria-label="RSS feed"
-              >
-                <Rss className="h-4 w-4" />
               </a>
             </div>
           </div>
