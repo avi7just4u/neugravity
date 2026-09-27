@@ -5,7 +5,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Globe, ChevronRight, GitBranch, BookOpen, CheckCircle, AlertCircle, Star, ArrowRight } from "lucide-react"
+import { Globe, ChevronRight, GitBranch, BookOpen, AlertCircle, Star, ArrowRight } from "lucide-react"
 import { ToolService } from "@/lib/services/tool.service"
 import type { Tool } from "@/types"
 
@@ -60,7 +60,7 @@ function AlternativeCard({ tool }: { tool: Tool }) {
   return (
     <Link
       href={`/tools/${tool.slug}`}
-      className="group flex items-center gap-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all"
+      className="card-base card-interactive group flex items-center gap-3 p-3"
     >
       <div className="flex items-center justify-center h-8 w-8 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-500 shrink-0">
         {tool.icon_url ? (
@@ -71,12 +71,12 @@ function AlternativeCard({ tool }: { tool: Tool }) {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+        <p className="text-sm font-medium text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
           {tool.name}
         </p>
         {tool.tagline && <p className="text-xs text-zinc-400 truncate">{tool.tagline}</p>}
       </div>
-      <ArrowRight className="h-3.5 w-3.5 text-zinc-300 group-hover:text-blue-400 shrink-0" />
+      <ArrowRight className="h-3.5 w-3.5 text-zinc-300 group-hover:text-indigo-400 shrink-0" />
     </Link>
   )
 }
@@ -152,7 +152,7 @@ export default async function ToolDetailPage({
                 )}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{tool.name}</h1>
+                <h1 className="text-headline text-zinc-900 dark:text-white">{tool.name}</h1>
                 {tool.tagline && <p className="text-zinc-500 dark:text-zinc-400">{tool.tagline}</p>}
               </div>
             </div>
@@ -199,7 +199,7 @@ export default async function ToolDetailPage({
 
           {/* Overview */}
           <section>
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-3">Overview</h2>
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">Overview</h2>
             <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">
               {tool.description ?? tool.tagline ?? `${tool.name} details are being compiled. Check back soon.`}
             </p>
@@ -208,26 +208,23 @@ export default async function ToolDetailPage({
             )}
           </section>
 
-          {/* Key features placeholder */}
+          {/* Key features — verified data only; structured feature list coming with real data */}
           <section>
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-3">Key Features</h2>
-            <div className="space-y-2">
-              {[
-                "Feature details are being verified and compiled.",
-                "Check the official website for the most current capabilities.",
-                "Comparisons with alternatives available in the Compare section.",
-              ].map((f) => (
-                <div key={f} className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                  <CheckCircle className="h-4 w-4 text-zinc-300 mt-0.5 shrink-0" />
-                  {f}
-                </div>
-              ))}
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">Key Features</h2>
+            <div className="card-raised p-5 text-sm text-zinc-500 dark:text-zinc-400">
+              Detailed feature breakdown for {tool.name} is being compiled from official sources.{" "}
+              {tool.website_url && (
+                <a href={tool.website_url} target="_blank" rel="noopener noreferrer"
+                  className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                  View official documentation →
+                </a>
+              )}
             </div>
           </section>
 
           {/* Pricing */}
           <section>
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-3">Pricing</h2>
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">Pricing</h2>
             <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 flex items-start gap-2 text-sm mb-4">
               <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <p className="text-amber-800 dark:text-amber-300">
@@ -241,7 +238,7 @@ export default async function ToolDetailPage({
                   href={`${tool.website_url}/pricing`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2 block"
+                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2 block"
                 >
                   View pricing on official website →
                 </a>

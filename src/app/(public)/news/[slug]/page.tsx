@@ -77,18 +77,18 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
                 </span>
               )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white leading-tight mb-3">
+            <h1 className="text-headline text-zinc-900 dark:text-white mb-3">
               {item.headline}
             </h1>
             {item.summary && (
-              <p className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed border-l-2 border-zinc-200 dark:border-zinc-700 pl-4">
+              <p className="text-zinc-600 dark:text-zinc-300 text-lg leading-relaxed border-l-2 border-indigo-300 dark:border-indigo-700 pl-4">
                 {item.summary}
               </p>
             )}
           </div>
 
           {item.body ? (
-            <div className="space-y-4">
+            <div className="space-y-4 max-w-[68ch]">
               {item.body.split("\n\n").filter(Boolean).map((para, i) => (
                 <p key={i} className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
                   {para}
@@ -96,20 +96,39 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
               ))}
             </div>
           ) : (
-            <div className="p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-              <p className="text-zinc-500 dark:text-zinc-400">Full article details coming soon.</p>
+            <div className="card-raised p-6">
+              <p className="text-zinc-500 dark:text-zinc-400 text-sm">Full article details coming soon.</p>
             </div>
           )}
         </article>
 
         <aside className="space-y-5">
-          <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <h3 className="font-semibold text-sm text-zinc-900 dark:text-white mb-3">Related News</h3>
-            <p className="text-xs text-zinc-400">Related stories coming soon.</p>
+          {item.sources && item.sources.length > 0 && (
+            <div className="card-base p-5">
+              <h3 className="text-label text-zinc-500 dark:text-zinc-400 mb-3">Original Source</h3>
+              <ul className="space-y-2">
+                {item.sources.map((src) => (
+                  <li key={src.id}>
+                    <a
+                      href={src.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                      {src.source_title ?? "Read original article"} →
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="card-base p-5">
+            <h3 className="text-label text-zinc-500 dark:text-zinc-400 mb-3">Related News</h3>
+            <p className="text-xs text-zinc-500">Related stories coming soon.</p>
           </div>
-          <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-            <h3 className="font-semibold text-sm text-zinc-900 dark:text-white mb-3">Related Technologies</h3>
-            <p className="text-xs text-zinc-400">Technologies mentioned in this story will appear here.</p>
+          <div className="card-base p-5">
+            <h3 className="text-label text-zinc-500 dark:text-zinc-400 mb-3">Related Technologies</h3>
+            <p className="text-xs text-zinc-500">Technologies mentioned in this story will appear here.</p>
           </div>
         </aside>
       </div>

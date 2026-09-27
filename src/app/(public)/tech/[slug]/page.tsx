@@ -79,15 +79,15 @@ function RelatedTechCard({ tech }: { tech: Technology }) {
   return (
     <Link
       href={`/tech/${tech.slug}`}
-      className="group flex items-center gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all"
+      className="card-base card-interactive group flex items-center gap-3 p-3"
     >
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+        <p className="text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 truncate">
           {tech.name}
         </p>
-        <p className="text-xs text-zinc-400 truncate">{tech.tagline ?? tech.type}</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{tech.tagline ?? tech.type}</p>
       </div>
-      <ArrowRight className="h-3.5 w-3.5 text-zinc-300 group-hover:text-blue-400 shrink-0" />
+      <ArrowRight className="h-3.5 w-3.5 text-zinc-300 group-hover:text-indigo-400 shrink-0" />
     </Link>
   )
 }
@@ -222,7 +222,7 @@ export default async function TechDetailPage({
                 )}
               </div>
 
-              <h1 className="text-4xl font-bold text-zinc-900 dark:text-white mb-2">{tech.name}</h1>
+              <h1 className="text-display text-zinc-900 dark:text-white mb-2">{tech.name}</h1>
 
               {tech.short_definition ? (
                 <p className="text-lg text-zinc-600 dark:text-zinc-300 leading-relaxed">{tech.short_definition}</p>
@@ -265,8 +265,8 @@ export default async function TechDetailPage({
             {hasExplanations && (
               <section aria-labelledby="understand-heading">
                 <div className="flex items-center gap-2 mb-4">
-                  <Network className="h-4 w-4 text-blue-500" />
-                  <h2 id="understand-heading" className="text-lg font-semibold text-zinc-900 dark:text-white">
+                  <Network className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+                  <h2 id="understand-heading" className="text-xl font-semibold text-zinc-900 dark:text-white">
                     Understand {tech.name}
                   </h2>
                 </div>
@@ -284,7 +284,7 @@ export default async function TechDetailPage({
                         role="tabpanel"
                         aria-labelledby={`tab-${type}`}
                         style={i > 0 ? { display: "none" } : undefined}
-                        className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-5"
+                        className="card-raised p-5"
                       >
                         {exp.title && (
                           <h3 className="text-base font-semibold text-zinc-900 dark:text-white mb-3">{exp.title}</h3>
@@ -307,7 +307,7 @@ export default async function TechDetailPage({
             {/* How it works (flow diagram) */}
             {flowNodes.length > 0 && (
               <section aria-labelledby="flow-heading">
-                <h2 id="flow-heading" className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+                <h2 id="flow-heading" className="text-xl font-semibold text-zinc-900 dark:text-white mb-4">
                   How It Works
                 </h2>
                 <ConceptFlow nodes={flowNodes} />
@@ -317,7 +317,7 @@ export default async function TechDetailPage({
             {/* Prerequisites */}
             {tech.prerequisites.length > 0 && (
               <section aria-labelledby="prereqs-heading">
-                <h2 id="prereqs-heading" className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+                <h2 id="prereqs-heading" className="text-xl font-semibold text-zinc-900 dark:text-white mb-4">
                   Learn First
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-2">
@@ -331,7 +331,7 @@ export default async function TechDetailPage({
             {/* Ecosystem */}
             {(tech.related_tools.length > 0 || tech.related_companies.length > 0) && (
               <section aria-labelledby="ecosystem-heading">
-                <h2 id="ecosystem-heading" className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+                <h2 id="ecosystem-heading" className="text-xl font-semibold text-zinc-900 dark:text-white mb-4">
                   Ecosystem
                 </h2>
                 <EcosystemSection
@@ -345,7 +345,7 @@ export default async function TechDetailPage({
             {!hasExplanations && (
               <>
                 <section>
-                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-3">
+                  <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">
                     What is {tech.name}?
                   </h2>
                   <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
@@ -363,7 +363,7 @@ export default async function TechDetailPage({
 
                 {flowNodes.length > 0 && (
                   <section aria-labelledby="flow-heading2">
-                    <h2 id="flow-heading2" className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+                    <h2 id="flow-heading2" className="text-xl font-semibold text-zinc-900 dark:text-white mb-4">
                       How It Works
                     </h2>
                     <ConceptFlow nodes={flowNodes} />
@@ -375,7 +375,7 @@ export default async function TechDetailPage({
             {/* Next concepts */}
             {tech.next_concepts.length > 0 && (
               <section aria-labelledby="next-heading">
-                <h2 id="next-heading" className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+                <h2 id="next-heading" className="text-xl font-semibold text-zinc-900 dark:text-white mb-4">
                   What to Learn Next
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-2">
@@ -389,7 +389,7 @@ export default async function TechDetailPage({
             {/* Related technologies (fallback from existing method) */}
             {tech.related_technologies && tech.related_technologies.length > 0 && (
               <section>
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-4">
                   Related Technologies
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -456,7 +456,7 @@ export default async function TechDetailPage({
                     <li key={c.id}>
                       <Link
                         href={`/compare/${c.slug}`}
-                        className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1"
+                        className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-1"
                       >
                         {c.title}
                       </Link>
@@ -480,7 +480,7 @@ export default async function TechDetailPage({
                     <li key={p.id}>
                       <Link
                         href={`/learn/${p.slug}`}
-                        className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+                        className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group"
                       >
                         <BookOpen className="h-3.5 w-3.5 shrink-0" />
                         <span className="line-clamp-1">{p.title}</span>
@@ -492,7 +492,7 @@ export default async function TechDetailPage({
                     <li key={c.id}>
                       <Link
                         href={`/courses/${c.slug}`}
-                        className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+                        className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group"
                       >
                         <BookOpen className="h-3.5 w-3.5 shrink-0 text-zinc-300" />
                         <span className="line-clamp-1">{c.title}</span>
@@ -511,7 +511,7 @@ export default async function TechDetailPage({
                 {tech.website_url && (
                   <li>
                     <a href={tech.website_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-blue-600 transition-colors">
+                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-indigo-600 transition-colors">
                       <Globe className="h-3.5 w-3.5" /> Website
                     </a>
                   </li>
@@ -519,7 +519,7 @@ export default async function TechDetailPage({
                 {tech.docs_url && (
                   <li>
                     <a href={tech.docs_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-blue-600 transition-colors">
+                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-indigo-600 transition-colors">
                       <BookOpen className="h-3.5 w-3.5" /> Documentation
                     </a>
                   </li>
@@ -527,7 +527,7 @@ export default async function TechDetailPage({
                 {tech.github_url && (
                   <li>
                     <a href={tech.github_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-blue-600 transition-colors">
+                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-indigo-600 transition-colors">
                       <GitBranch className="h-3.5 w-3.5" /> GitHub
                     </a>
                   </li>
@@ -535,7 +535,7 @@ export default async function TechDetailPage({
                 {tech.wikipedia_url && (
                   <li>
                     <a href={tech.wikipedia_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-blue-600 transition-colors">
+                      className="flex items-center gap-2 text-sm text-zinc-500 hover:text-indigo-600 transition-colors">
                       <Network className="h-3.5 w-3.5" /> Wikipedia
                     </a>
                   </li>
