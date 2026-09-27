@@ -2,7 +2,6 @@ export const revalidate = 3600
 
 import type { Metadata } from "next"
 import Link from "next/link"
-import Image from "next/image"
 import { notFound } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -65,7 +64,8 @@ function AlternativeCard({ tool }: { tool: Tool }) {
     >
       <div className="flex items-center justify-center h-8 w-8 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-500 shrink-0">
         {tool.icon_url ? (
-          <Image src={tool.icon_url} alt={tool.name} width={32} height={32} className="h-full w-full object-contain rounded-md" />
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={tool.icon_url} alt={tool.name} className="h-full w-full object-contain rounded-md" />
         ) : (
           tool.name.charAt(0)
         )}
@@ -154,7 +154,8 @@ export default async function ToolDetailPage({
             <div className="flex items-center gap-3 mb-4">
               <div className="flex items-center justify-center h-14 w-14 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xl font-bold text-zinc-600 dark:text-zinc-300 overflow-hidden shrink-0">
                 {tool.icon_url ? (
-                  <Image src={tool.icon_url} alt={tool.name} width={56} height={56} className="h-full w-full object-contain" />
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={tool.icon_url} alt={tool.name} className="h-full w-full object-contain" />
                 ) : (
                   tool.name.charAt(0)
                 )}
