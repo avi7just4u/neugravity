@@ -1,7 +1,8 @@
-export const revalidate = 300
+export const revalidate = 3600
 
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -64,8 +65,7 @@ function AlternativeCard({ tool }: { tool: Tool }) {
     >
       <div className="flex items-center justify-center h-8 w-8 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-500 shrink-0">
         {tool.icon_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={tool.icon_url} alt={tool.name} className="h-full w-full object-contain rounded-md" />
+          <Image src={tool.icon_url} alt={tool.name} width={32} height={32} className="h-full w-full object-contain rounded-md" />
         ) : (
           tool.name.charAt(0)
         )}
@@ -79,6 +79,31 @@ function AlternativeCard({ tool }: { tool: Tool }) {
       <ArrowRight className="h-3.5 w-3.5 text-zinc-300 group-hover:text-blue-400 shrink-0" />
     </Link>
   )
+}
+
+function buildToolJsonLd(tool: Tool, url: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: tool.name,
+    url,
+    description: tool.description ?? tool.tagline ?? undefined,
+    applicationCategory: tool.tool_type ?? "WebApplication",
+    ...(tool.website_url ? { sameAs: tool.website_url } : {}),
+    ...(tool.pricing_model === "free" || tool.pricing_model === "open_source" || tool.has_free_tier
+      ? { offers: { "@type": "Offer", price: "0", priceCurrency: "USD" } }
+      : {}),
+    ...(tool.rating_average != null && tool.rating_count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: tool.rating_average.toFixed(1),
+            ratingCount: tool.rating_count,
+            bestRating: "5",
+          },
+        }
+      : {}),
+  }
 }
 
 export default async function ToolDetailPage({
@@ -103,8 +128,15 @@ export default async function ToolDetailPage({
     { label: "Enterprise", value: tool.enterprise_available ? "Yes" : "No" },
   ].filter((d) => d.value != null && d.value !== "")
 
+  const toolUrl = `${siteUrl}/tools/${slug}`
+  const toolJsonLd = buildToolJsonLd(tool, toolUrl)
+
   return (
     <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(toolJsonLd) }}
+      />
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-zinc-400 mb-8" aria-label="Breadcrumb">
         <Link href="/" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Home</Link>
@@ -122,8 +154,7 @@ export default async function ToolDetailPage({
             <div className="flex items-center gap-3 mb-4">
               <div className="flex items-center justify-center h-14 w-14 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xl font-bold text-zinc-600 dark:text-zinc-300 overflow-hidden shrink-0">
                 {tool.icon_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={tool.icon_url} alt={tool.name} className="h-full w-full object-contain" />
+                  <Image src={tool.icon_url} alt={tool.name} width={56} height={56} className="h-full w-full object-contain" />
                 ) : (
                   tool.name.charAt(0)
                 )}

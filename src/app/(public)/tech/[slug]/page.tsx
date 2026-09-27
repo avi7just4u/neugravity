@@ -1,4 +1,4 @@
-export const revalidate = 300
+export const revalidate = 3600
 
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -101,15 +101,28 @@ function jsonLd(tech: TechnologyWithRelations) {
     })
   }
 
+  const techUrl = `${SITE_URL}/tech/${tech.slug}`
   return {
     "@context": "https://schema.org",
-    "@type": "TechArticle",
-    name: tech.name,
-    description: tech.seo_description ?? tech.short_definition ?? tech.tagline ?? tech.description ?? "",
-    url: `${SITE_URL}/tech/${tech.slug}`,
-    dateModified: tech.updated_at,
-    ...(tech.website_url ? { sameAs: tech.website_url } : {}),
-    ...(about.length > 0 ? { about } : {}),
+    "@graph": [
+      {
+        "@type": "TechArticle",
+        name: tech.name,
+        description: tech.seo_description ?? tech.short_definition ?? tech.tagline ?? tech.description ?? "",
+        url: techUrl,
+        dateModified: tech.updated_at,
+        ...(tech.website_url ? { sameAs: tech.website_url } : {}),
+        ...(about.length > 0 ? { about } : {}),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name: "Tech", item: `${SITE_URL}/tech` },
+          { "@type": "ListItem", position: 3, name: tech.name, item: techUrl },
+        ],
+      },
+    ],
   }
 }
 

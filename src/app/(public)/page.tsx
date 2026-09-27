@@ -1,6 +1,7 @@
 // Revalidate every 60 seconds — ISR keeps homepage fresh without full SSR on every request
 export const revalidate = 60
 
+import type { Metadata } from "next"
 import Link from "next/link"
 import {
   ArrowRight,
@@ -26,6 +27,51 @@ import { ContentService } from "@/lib/services/content.service"
 import { ToolService } from "@/lib/services/tool.service"
 import { ComparisonService } from "@/lib/services/comparison.service"
 import { formatRelativeDate } from "@/lib/utils"
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+
+export const metadata: Metadata = {
+  title: "NeuGravity — Tech Intelligence Platform",
+  description: "The intelligence layer for engineering teams. Track technologies, tools, companies, and industry trends in one place.",
+  alternates: { canonical: SITE_URL },
+  openGraph: {
+    title: "NeuGravity — Tech Intelligence Platform",
+    description: "The intelligence layer for engineering teams. Track technologies, tools, companies, and industry trends in one place.",
+    url: SITE_URL,
+    siteName: "NeuGravity",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NeuGravity — Tech Intelligence Platform",
+    description: "The intelligence layer for engineering teams.",
+  },
+}
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "NeuGravity",
+      url: SITE_URL,
+      description: "Tech intelligence platform for engineering teams",
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: "NeuGravity",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/search?q={search_term_string}` },
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+}
 
 // Static fallbacks shown when DB is not yet connected
 const RADAR_ITEMS = [
@@ -59,6 +105,10 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
       {/* HERO */}
       <section className="relative overflow-hidden border-b border-zinc-100 dark:border-zinc-900">
         <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-20 md:py-28 lg:py-36">

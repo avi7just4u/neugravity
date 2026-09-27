@@ -1,7 +1,8 @@
-export const revalidate = 300
+export const revalidate = 3600
 
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Wrench, ArrowRight, Star } from "lucide-react"
 import { ToolService } from "@/lib/services/tool.service"
@@ -44,8 +45,7 @@ function ToolCard({ tool }: { tool: Tool }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm font-bold text-zinc-600 dark:text-zinc-400 shrink-0 overflow-hidden">
           {tool.icon_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={tool.icon_url} alt={tool.name} className="h-full w-full object-contain" />
+            <Image src={tool.icon_url} alt={tool.name} width={40} height={40} className="h-full w-full object-contain" />
           ) : (
             initial
           )}

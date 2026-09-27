@@ -49,13 +49,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (techData.status === "fulfilled") {
     for (const t of techData.value.data) {
-      dynamicRoutes.push({ url: `${siteUrl}/tech/${t.slug}`, changeFrequency: "weekly", priority: 0.7 })
+      dynamicRoutes.push({
+        url: `${siteUrl}/tech/${t.slug}`,
+        lastModified: t.updated_at ? new Date(t.updated_at) : undefined,
+        changeFrequency: "weekly",
+        priority: 0.7,
+      })
     }
   }
 
   if (toolData.status === "fulfilled") {
     for (const t of toolData.value.data) {
-      dynamicRoutes.push({ url: `${siteUrl}/tools/${t.slug}`, changeFrequency: "weekly", priority: 0.7 })
+      dynamicRoutes.push({
+        url: `${siteUrl}/tools/${t.slug}`,
+        lastModified: t.updated_at ? new Date(t.updated_at) : undefined,
+        changeFrequency: "weekly",
+        priority: 0.7,
+      })
     }
   }
 
@@ -83,13 +93,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (companyData.status === "fulfilled") {
     for (const c of companyData.value.data) {
-      dynamicRoutes.push({ url: `${siteUrl}/companies/${c.slug}`, changeFrequency: "weekly", priority: 0.6 })
+      dynamicRoutes.push({
+        url: `${siteUrl}/companies/${c.slug}`,
+        lastModified: c.updated_at ? new Date(c.updated_at) : undefined,
+        changeFrequency: "weekly",
+        priority: 0.6,
+      })
     }
   }
 
   if (comparisonData.status === "fulfilled") {
     for (const c of comparisonData.value.data) {
-      dynamicRoutes.push({ url: `${siteUrl}/compare/${c.slug}`, changeFrequency: "weekly", priority: 0.7 })
+      dynamicRoutes.push({
+        url: `${siteUrl}/compare/${c.slug}`,
+        lastModified: c.updated_at ? new Date(c.updated_at) : undefined,
+        changeFrequency: "weekly",
+        priority: 0.7,
+      })
     }
   }
 
