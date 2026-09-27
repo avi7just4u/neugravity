@@ -7,10 +7,15 @@
  *   C. News signals (trending topic with weak coverage)
  *   D. Tool gaps (no comparison, stale data)
  *   E. Learning gaps (technology with no course/lesson)
+ *   F. Content decay (stale published content)
  *
  * This service runs asynchronously (called from opportunity-analysis worker).
  * It NEVER writes to content_opportunities directly — it returns candidates
  * that the caller can deduplicate and persist.
+ *
+ * NOTE: Supabase JS nested subquery filters (.not("id","in",queryBuilder))
+ * do not work reliably against the PostgREST REST API. All subquery lookups
+ * use a two-step fetch: get IDs from the secondary table, then exclude them.
  */
 
 import { createAdminClient } from "@/lib/supabase/server"
@@ -20,7 +25,7 @@ export interface OpportunityCandidate extends CreateOpportunityInput {
   _score: number // internal scoring signal; not exposed publicly
 }
 
-function score(opts: {
+export function score(opts: {
   searchCount?: number
   hasNews?: boolean
   hasExistingContent?: boolean
@@ -38,7 +43,7 @@ function score(opts: {
   return s
 }
 
-function toPriority(s: number): "high" | "medium" | "low" {
+export function toPriority(s: number): "high" | "medium" | "low" {
   if (s >= 80) return "high"
   if (s >= 55) return "medium"
   return "low"
@@ -65,7 +70,7 @@ export async function analyzeSearchSignals(opts: {
 
     if (!rows || rows.length === 0) return candidates
 
-    // Aggregate
+    // Aggregate in JS
     const agg = new Map<string, { count: number; total_results: number }>()
     for (const row of rows) {
       const k = row.normalized as string
@@ -134,6 +139,7 @@ export async function analyzeSearchSignals(opts: {
 
 // ============================================================
 // B. KNOWLEDGE GRAPH GAPS
+// Two-step fetch pattern: get exclusion IDs first, then filter.
 // ============================================================
 export async function analyzeKnowledgeGraphGaps(): Promise<OpportunityCandidate[]> {
   const candidates: OpportunityCandidate[] = []
@@ -141,18 +147,24 @@ export async function analyzeKnowledgeGraphGaps(): Promise<OpportunityCandidate[
   try {
     const db = createAdminClient()
 
-    // Technologies with no explanation
-    const { data: techNoExplanation } = await db
+    // --- Technologies with no explanation ---
+    // Step 1: get all technology IDs that already have explanations
+    const { data: explainedRows } = await db
+      .from("technology_explanations")
+      .select("technology_id")
+    const explainedIds = (explainedRows ?? []).map((r: { technology_id: string }) => r.technology_id).filter(Boolean)
+
+    // Step 2: fetch published techs not in that list
+    let techExplQuery = db
       .from("technologies")
       .select("id, name, slug, popularity_score, updated_at")
       .eq("published", true)
-      .not(
-        "id",
-        "in",
-        db.from("technology_explanations").select("technology_id")
-      )
       .order("popularity_score", { ascending: false })
       .limit(30)
+    if (explainedIds.length > 0) {
+      techExplQuery = techExplQuery.not("id", "in", `(${explainedIds.join(",")})`)
+    }
+    const { data: techNoExplanation } = await techExplQuery
 
     for (const tech of techNoExplanation ?? []) {
       const sc = score({ hasExistingContent: false, hasGraphRelationship: false })
@@ -174,23 +186,27 @@ export async function analyzeKnowledgeGraphGaps(): Promise<OpportunityCandidate[
       })
     }
 
-    // Technologies with no related tools in entity_relationships
-    const { data: techNoTools } = await db
+    // --- Technologies with no related tools ---
+    // Step 1: get tech IDs that already have tool relationships
+    const { data: techWithToolRels } = await db
+      .from("entity_relationships")
+      .select("source_entity_id")
+      .eq("source_entity_type", "technology")
+      .in("relationship_type", ["USES", "IMPLEMENTS", "RELATED_TO"])
+      .eq("target_entity_type", "tool")
+    const techWithToolIds = (techWithToolRels ?? []).map((r: { source_entity_id: string }) => r.source_entity_id).filter(Boolean)
+
+    // Step 2: fetch published techs not in that list
+    let techNoToolQuery = db
       .from("technologies")
       .select("id, name, slug, popularity_score")
       .eq("published", true)
-      .not(
-        "id",
-        "in",
-        db
-          .from("entity_relationships")
-          .select("source_entity_id")
-          .eq("source_entity_type", "technology")
-          .in("relationship_type", ["USES", "IMPLEMENTS", "RELATED_TO"])
-          .eq("target_entity_type", "tool")
-      )
       .order("popularity_score", { ascending: false })
       .limit(20)
+    if (techWithToolIds.length > 0) {
+      techNoToolQuery = techNoToolQuery.not("id", "in", `(${techWithToolIds.join(",")})`)
+    }
+    const { data: techNoTools } = await techNoToolQuery
 
     for (const tech of techNoTools ?? []) {
       const sc = score({ hasGraphRelationship: false })
@@ -212,22 +228,26 @@ export async function analyzeKnowledgeGraphGaps(): Promise<OpportunityCandidate[
       })
     }
 
-    // Tools with no comparison
-    const { data: toolsNoComparison } = await db
+    // --- Tools with no comparison ---
+    // Step 1: get tool IDs that already have comparison relationships
+    const { data: toolsWithComparison } = await db
+      .from("entity_relationships")
+      .select("source_entity_id")
+      .eq("source_entity_type", "tool")
+      .in("relationship_type", ["COMPARED_WITH", "ALTERNATIVE_TO"])
+    const toolsWithCompIds = (toolsWithComparison ?? []).map((r: { source_entity_id: string }) => r.source_entity_id).filter(Boolean)
+
+    // Step 2: fetch published tools not in that list
+    let toolNoCompQuery = db
       .from("tools")
       .select("id, name, slug, rating_count")
       .eq("published", true)
-      .not(
-        "id",
-        "in",
-        db
-          .from("entity_relationships")
-          .select("source_entity_id")
-          .eq("source_entity_type", "tool")
-          .in("relationship_type", ["COMPARED_WITH", "ALTERNATIVE_TO"])
-      )
       .order("rating_count", { ascending: false })
       .limit(20)
+    if (toolsWithCompIds.length > 0) {
+      toolNoCompQuery = toolNoCompQuery.not("id", "in", `(${toolsWithCompIds.join(",")})`)
+    }
+    const { data: toolsNoComparison } = await toolNoCompQuery
 
     for (const tool of toolsNoComparison ?? []) {
       const sc = score({ hasGraphRelationship: false })
@@ -265,7 +285,7 @@ export async function analyzeNewsSignals(): Promise<OpportunityCandidate[]> {
     const db = createAdminClient()
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-    // Recent published news, check if related technology has weak explanation
+    // Recent published news linked to technologies
     const { data: recentNews } = await db
       .from("news_items")
       .select("id, title, entity_type, entity_id, published_at")
@@ -278,30 +298,35 @@ export async function analyzeNewsSignals(): Promise<OpportunityCandidate[]> {
 
     if (!recentNews || recentNews.length === 0) return candidates
 
-    // For technology-linked news, check explanation coverage
     const techIds = [
       ...new Set(
         recentNews
-          .filter((n) => n.entity_type === "technology" && n.entity_id)
-          .map((n) => n.entity_id as string)
+          .filter((n: { entity_type: string; entity_id: string }) => n.entity_type === "technology" && n.entity_id)
+          .map((n: { entity_id: string }) => n.entity_id)
       ),
     ]
 
     if (techIds.length === 0) return candidates
 
-    // Which of these technologies have no explanation?
-    const { data: noExplanationTechs } = await db
+    // Step 1: get tech IDs that already have explanations (from the subset in news)
+    const { data: explainedRows } = await db
+      .from("technology_explanations")
+      .select("technology_id")
+      .in("technology_id", techIds)
+    const explainedIds = (explainedRows ?? []).map((r: { technology_id: string }) => r.technology_id)
+
+    // Step 2: fetch the news-linked techs that have no explanation
+    let noExplQuery = db
       .from("technologies")
       .select("id, name, slug")
       .in("id", techIds)
-      .not(
-        "id",
-        "in",
-        db.from("technology_explanations").select("technology_id").in("technology_id", techIds)
-      )
+    if (explainedIds.length > 0) {
+      noExplQuery = noExplQuery.not("id", "in", `(${explainedIds.join(",")})`)
+    }
+    const { data: noExplanationTechs } = await noExplQuery
 
     const newsMap = new Map<string, string>()
-    for (const n of recentNews) {
+    for (const n of recentNews as { entity_id?: string; title: string }[]) {
       if (n.entity_id) newsMap.set(n.entity_id, n.title)
     }
 
@@ -373,23 +398,27 @@ export async function analyzeToolGaps(): Promise<OpportunityCandidate[]> {
       })
     }
 
-    // Highly-rated tools with no comparison
-    const { data: popularToolsNoComparison } = await db
+    // Highly-rated tools with no comparison — two-step fetch
+    // Step 1: get tool IDs that have comparison relationships
+    const { data: toolsWithComparison } = await db
+      .from("entity_relationships")
+      .select("source_entity_id")
+      .eq("source_entity_type", "tool")
+      .in("relationship_type", ["COMPARED_WITH", "ALTERNATIVE_TO", "COMPETES_WITH"])
+    const toolsWithCompIds = (toolsWithComparison ?? []).map((r: { source_entity_id: string }) => r.source_entity_id).filter(Boolean)
+
+    // Step 2: popular tools not in that list
+    let popularToolsQuery = db
       .from("tools")
       .select("id, name, slug, rating_count, rating_average")
       .eq("published", true)
       .gte("rating_count", 100)
-      .not(
-        "id",
-        "in",
-        db
-          .from("entity_relationships")
-          .select("source_entity_id")
-          .eq("source_entity_type", "tool")
-          .in("relationship_type", ["COMPARED_WITH", "ALTERNATIVE_TO", "COMPETES_WITH"])
-      )
       .order("rating_count", { ascending: false })
       .limit(10)
+    if (toolsWithCompIds.length > 0) {
+      popularToolsQuery = popularToolsQuery.not("id", "in", `(${toolsWithCompIds.join(",")})`)
+    }
+    const { data: popularToolsNoComparison } = await popularToolsQuery
 
     for (const tool of popularToolsNoComparison ?? []) {
       const sc = score({ hasGraphRelationship: false, searchCount: tool.rating_count })
@@ -419,6 +448,7 @@ export async function analyzeToolGaps(): Promise<OpportunityCandidate[]> {
 
 // ============================================================
 // E. LEARNING GAPS
+// Two-step fetch pattern for subquery exclusions.
 // ============================================================
 export async function analyzeLearningGaps(): Promise<OpportunityCandidate[]> {
   const candidates: OpportunityCandidate[] = []
@@ -426,23 +456,27 @@ export async function analyzeLearningGaps(): Promise<OpportunityCandidate[]> {
   try {
     const db = createAdminClient()
 
-    // Technologies with no course or lesson
-    const { data: techNoCourse } = await db
+    // --- Technologies with no course/lesson ---
+    // Step 1: get tech IDs that have course relationships
+    const { data: techWithCourseRels } = await db
+      .from("entity_relationships")
+      .select("source_entity_id")
+      .eq("source_entity_type", "technology")
+      .in("relationship_type", ["COVERED_BY", "EXPLAINED_BY"])
+      .eq("target_entity_type", "course")
+    const techWithCourseIds = (techWithCourseRels ?? []).map((r: { source_entity_id: string }) => r.source_entity_id).filter(Boolean)
+
+    // Step 2: published techs without course relationships
+    let techNoCourseQuery = db
       .from("technologies")
       .select("id, name, slug, popularity_score")
       .eq("published", true)
-      .not(
-        "id",
-        "in",
-        db
-          .from("entity_relationships")
-          .select("source_entity_id")
-          .eq("source_entity_type", "technology")
-          .in("relationship_type", ["COVERED_BY", "EXPLAINED_BY"])
-          .eq("target_entity_type", "course")
-      )
       .order("popularity_score", { ascending: false })
       .limit(20)
+    if (techWithCourseIds.length > 0) {
+      techNoCourseQuery = techNoCourseQuery.not("id", "in", `(${techWithCourseIds.join(",")})`)
+    }
+    const { data: techNoCourse } = await techNoCourseQuery
 
     for (const tech of techNoCourse ?? []) {
       const sc = score({ hasExistingContent: false, searchCount: tech.popularity_score * 10 })
@@ -464,7 +498,7 @@ export async function analyzeLearningGaps(): Promise<OpportunityCandidate[]> {
       })
     }
 
-    // Learning paths with fewer than 3 steps
+    // --- Learning paths with fewer than 3 steps ---
     const { data: thinPaths } = await db
       .from("learning_paths")
       .select("id, title, step_count")
@@ -473,7 +507,7 @@ export async function analyzeLearningGaps(): Promise<OpportunityCandidate[]> {
       .limit(10)
 
     for (const path of thinPaths ?? []) {
-      const sc = score({ isStale: false })
+      const sc = score({})
       candidates.push({
         topic: `${path.title} — expand learning path`,
         title_suggestion: `${path.title} — Add prerequisite and advanced steps`,

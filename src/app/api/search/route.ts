@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { SearchService } from "@/lib/search/search.service"
 import { createAdminClient } from "@/lib/supabase/server"
 
+// In-process dedup: prevents logging the same (session, query) within 60s
+// Works per Vercel instance; cross-instance duplicates within the window are acceptable.
+const recentLogKeys = new Map<string, number>()
+const LOG_DEDUP_TTL_MS = 60_000
+
 async function logSearchQuery(
   query: string,
   resultsCount: number,
@@ -9,13 +14,36 @@ async function logSearchQuery(
 ): Promise<void> {
   try {
     const normalized = query.toLowerCase().replace(/[^a-z0-9]/g, "")
-    if (!normalized) return
+    if (!normalized || normalized.length < 2) return
+
+    // Sanitize session_id — opaque token only, max 128 chars, no spaces
+    const safeSession = sessionId
+      ? sessionId.replace(/[^a-zA-Z0-9_\-]/g, "").slice(0, 128) || null
+      : null
+
+    // Dedup: skip if same (session, query) logged within TTL window
+    if (safeSession) {
+      const key = `${safeSession}:${normalized}`
+      const lastTs = recentLogKeys.get(key)
+      if (lastTs && Date.now() - lastTs < LOG_DEDUP_TTL_MS) return
+      recentLogKeys.set(key, Date.now())
+
+      // Periodic cleanup to bound Map size
+      if (recentLogKeys.size > 2000) {
+        const cutoff = Date.now() - LOG_DEDUP_TTL_MS
+        for (const [k, ts] of recentLogKeys.entries()) {
+          if (ts < cutoff) recentLogKeys.delete(k)
+        }
+      }
+    }
+
     const db = createAdminClient()
     await db.from("search_query_log").insert({
-      query: query.slice(0, 200),
+      query: query.slice(0, 500),
       normalized: normalized.slice(0, 200),
-      results_count: resultsCount,
-      session_id: sessionId,
+      results_count: Math.max(0, resultsCount), // server-derived, never negative
+      session_id: safeSession,
+      // user_id intentionally omitted — search is public, do not log identity
     })
   } catch {
     // Fire-and-forget — never fail the search response

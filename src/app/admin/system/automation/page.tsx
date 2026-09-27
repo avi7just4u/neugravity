@@ -13,6 +13,7 @@ import {
   Wrench,
   Activity,
   XCircle,
+  Lightbulb,
 } from "lucide-react"
 
 export const metadata: Metadata = { title: "Automation" }
@@ -50,7 +51,7 @@ async function getAutomationData() {
 
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  const [sourcesResult, jobStats, pendingNewsResult, stuckResult, toolRefreshResult] = await Promise.allSettled([
+  const [sourcesResult, jobStats, pendingNewsResult, stuckResult, toolRefreshResult, oppAnalysisResult, activeOppCountResult] = await Promise.allSettled([
     SourceService.getSources({ perPage: 100 }),
 
     // Queue stats by type in last 24h
@@ -81,13 +82,27 @@ async function getAutomationData() {
       .eq("job_type", "tool_refresh")
       .order("created_at", { ascending: false })
       .limit(1),
+
+    // Latest opportunity-analysis job
+    db
+      .from("jobs")
+      .select("id, status, created_at, completed_at, failed_at, payload")
+      .eq("job_type", "ANALYZE_OPPORTUNITIES")
+      .order("created_at", { ascending: false })
+      .limit(1),
+
+    // Count active opportunities (not dismissed/completed)
+    db
+      .from("content_opportunities")
+      .select("id", { count: "exact", head: true })
+      .not("status", "in", '("dismissed","completed")'),
   ])
 
-  return { sourcesResult, jobStats, pendingNewsResult, stuckResult, toolRefreshResult }
+  return { sourcesResult, jobStats, pendingNewsResult, stuckResult, toolRefreshResult, oppAnalysisResult, activeOppCountResult }
 }
 
 export default async function AutomationPage() {
-  const { sourcesResult, jobStats, pendingNewsResult, stuckResult, toolRefreshResult } =
+  const { sourcesResult, jobStats, pendingNewsResult, stuckResult, toolRefreshResult, oppAnalysisResult, activeOppCountResult } =
     await getAutomationData()
 
   const sources: Source[] = sourcesResult.status === "fulfilled" ? (sourcesResult.value.data ?? []) : []
@@ -98,6 +113,16 @@ export default async function AutomationPage() {
   const latestToolRefresh =
     toolRefreshResult.status === "fulfilled"
       ? ((toolRefreshResult.value.data ?? []) as Record<string, unknown>[])[0] ?? null
+      : null
+
+  const latestOppAnalysis =
+    oppAnalysisResult.status === "fulfilled"
+      ? ((oppAnalysisResult.value.data ?? []) as Record<string, unknown>[])[0] ?? null
+      : null
+
+  const activeOppCount =
+    activeOppCountResult.status === "fulfilled"
+      ? (activeOppCountResult.value.count ?? 0)
       : null
 
   // Compute per-queue stats from jobs array
@@ -311,6 +336,44 @@ export default async function AutomationPage() {
         </div>
       </div>
 
+      {/* Content Intelligence */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2">
+          <Lightbulb className="h-4 w-4 text-amber-500" />
+          <h2 className="text-sm font-medium text-zinc-900 dark:text-white">Content Intelligence</h2>
+          <span className="ml-auto text-xs text-zinc-400">Runs daily at 3 AM UTC</span>
+        </div>
+        <div className="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-zinc-100 dark:divide-zinc-800">
+          <div className="px-4 py-3">
+            <p className="text-xs text-zinc-400 mb-1">Last Analysis</p>
+            <p className="text-sm font-medium text-zinc-900 dark:text-white">
+              {latestOppAnalysis
+                ? formatRelative((latestOppAnalysis.completed_at ?? latestOppAnalysis.created_at) as string)
+                : "Never run"}
+            </p>
+            {latestOppAnalysis && (
+              <p className={`text-xs mt-0.5 ${latestOppAnalysis.status === "completed" ? "text-green-600 dark:text-green-400" : latestOppAnalysis.status === "failed" ? "text-red-500" : "text-amber-500"}`}>
+                {latestOppAnalysis.status as string}
+              </p>
+            )}
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-xs text-zinc-400 mb-1">Next Run</p>
+            <p className="text-sm font-medium text-zinc-900 dark:text-white">3:00 AM UTC daily</p>
+            <p className="text-xs text-zinc-400 mt-0.5">or via manual trigger</p>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-xs text-zinc-400 mb-1">Active Opportunities</p>
+            <p className="text-sm font-medium text-zinc-900 dark:text-white">
+              {activeOppCount === null ? "—" : activeOppCount}
+            </p>
+            <Link href="/admin/content-opportunities" className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-0.5 inline-block">
+              View all →
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Stuck jobs warning */}
       {stuckJobs.length > 0 && (
         <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/40 rounded-lg overflow-hidden">
@@ -352,6 +415,9 @@ export default async function AutomationPage() {
         </Link>
         <Link href="/admin/editorial" className="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
           Editorial queue →
+        </Link>
+        <Link href="/admin/content-opportunities" className="hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+          Content opportunities →
         </Link>
       </div>
     </div>

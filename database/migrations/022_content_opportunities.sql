@@ -1,13 +1,16 @@
 -- ============================================================
 -- Migration 022: Content Opportunities — Phase 4.5
 -- Editorial intelligence layer. Additive only.
+-- No DROP TABLE, TRUNCATE, or destructive operations.
+-- Safe to re-run (all CREATE statements use IF NOT EXISTS;
+--   trigger and policies use DROP IF EXISTS before re-create).
 -- ============================================================
 
 -- ============================================================
 -- CONTENT_OPPORTUNITIES — core model
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.content_opportunities (
-  id                    UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                    UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   topic                 TEXT        NOT NULL,
   title_suggestion      TEXT,
   content_type          TEXT        NOT NULL
@@ -52,16 +55,18 @@ CREATE TABLE IF NOT EXISTS public.content_opportunities (
   ) STORED
 );
 
-CREATE INDEX IF NOT EXISTS co_status_idx     ON public.content_opportunities(status);
-CREATE INDEX IF NOT EXISTS co_priority_idx   ON public.content_opportunities(priority);
+CREATE INDEX IF NOT EXISTS co_status_idx       ON public.content_opportunities(status);
+CREATE INDEX IF NOT EXISTS co_priority_idx     ON public.content_opportunities(priority);
 CREATE INDEX IF NOT EXISTS co_content_type_idx ON public.content_opportunities(content_type);
-CREATE INDEX IF NOT EXISTS co_source_idx     ON public.content_opportunities(source);
-CREATE INDEX IF NOT EXISTS co_entity_idx     ON public.content_opportunities(related_entity_type, related_entity_id);
-CREATE INDEX IF NOT EXISTS co_assigned_idx   ON public.content_opportunities(assigned_to) WHERE assigned_to IS NOT NULL;
-CREATE INDEX IF NOT EXISTS co_dedup_idx      ON public.content_opportunities(dedup_key);
-CREATE INDEX IF NOT EXISTS co_created_at_idx ON public.content_opportunities(created_at DESC);
-CREATE INDEX IF NOT EXISTS co_updated_at_idx ON public.content_opportunities(updated_at DESC);
+CREATE INDEX IF NOT EXISTS co_source_idx       ON public.content_opportunities(source);
+CREATE INDEX IF NOT EXISTS co_entity_idx       ON public.content_opportunities(related_entity_type, related_entity_id);
+CREATE INDEX IF NOT EXISTS co_assigned_idx     ON public.content_opportunities(assigned_to) WHERE assigned_to IS NOT NULL;
+CREATE INDEX IF NOT EXISTS co_dedup_idx        ON public.content_opportunities(dedup_key);
+CREATE INDEX IF NOT EXISTS co_created_at_idx   ON public.content_opportunities(created_at DESC);
+CREATE INDEX IF NOT EXISTS co_updated_at_idx   ON public.content_opportunities(updated_at DESC);
 
+-- Trigger: idempotent (drop then recreate)
+DROP TRIGGER IF EXISTS content_opportunities_updated_at ON public.content_opportunities;
 CREATE TRIGGER content_opportunities_updated_at
   BEFORE UPDATE ON public.content_opportunities
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
@@ -71,6 +76,7 @@ CREATE TRIGGER content_opportunities_updated_at
 -- ============================================================
 ALTER TABLE public.content_opportunities ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS co_editor_select ON public.content_opportunities;
 CREATE POLICY co_editor_select ON public.content_opportunities
   FOR SELECT TO authenticated
   USING (
@@ -81,6 +87,7 @@ CREATE POLICY co_editor_select ON public.content_opportunities
     )
   );
 
+DROP POLICY IF EXISTS co_editor_insert ON public.content_opportunities;
 CREATE POLICY co_editor_insert ON public.content_opportunities
   FOR INSERT TO authenticated
   WITH CHECK (
@@ -91,6 +98,7 @@ CREATE POLICY co_editor_insert ON public.content_opportunities
     )
   );
 
+DROP POLICY IF EXISTS co_editor_update ON public.content_opportunities;
 CREATE POLICY co_editor_update ON public.content_opportunities
   FOR UPDATE TO authenticated
   USING (
@@ -104,27 +112,38 @@ CREATE POLICY co_editor_update ON public.content_opportunities
 -- ============================================================
 -- SEARCH QUERY LOG — track search queries for signal analysis
 -- Separate from analytics_events for efficient aggregation.
+--
+-- Security note: All inserts happen via service-role key from
+-- the server-side search API route. No direct anon inserts are
+-- permitted — the anon client can read nothing here.
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.search_query_log (
-  id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
-  query         TEXT        NOT NULL,
-  normalized    TEXT        NOT NULL,
-  results_count INTEGER     NOT NULL DEFAULT 0,
+  id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  query         TEXT        NOT NULL CHECK (length(query) <= 500),
+  normalized    TEXT        NOT NULL CHECK (length(normalized) <= 200),
+  results_count INTEGER     NOT NULL DEFAULT 0 CHECK (results_count >= 0),
   has_results   BOOLEAN     NOT NULL GENERATED ALWAYS AS (results_count > 0) STORED,
-  session_id    TEXT,
+  -- session_id is an opaque client-provided token used only for dedup; not linked to auth
+  session_id    TEXT        CHECK (length(session_id) <= 128),
+  -- user_id is never set from client — only from authenticated server context
   user_id       UUID        REFERENCES public.users(id) ON DELETE SET NULL,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS sql_normalized_idx    ON public.search_query_log(normalized);
-CREATE INDEX IF NOT EXISTS sql_has_results_idx   ON public.search_query_log(has_results);
-CREATE INDEX IF NOT EXISTS sql_created_at_idx    ON public.search_query_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS sql_normalized_idx  ON public.search_query_log(normalized);
+CREATE INDEX IF NOT EXISTS sql_has_results_idx ON public.search_query_log(has_results);
+CREATE INDEX IF NOT EXISTS sql_created_at_idx  ON public.search_query_log(created_at DESC);
+-- Support fast dedup checks (session_id + normalized + recent window)
+CREATE INDEX IF NOT EXISTS sql_dedup_idx       ON public.search_query_log(session_id, normalized, created_at DESC)
+  WHERE session_id IS NOT NULL;
 
--- Allow anon inserts (search is public)
 ALTER TABLE public.search_query_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY sql_anon_insert ON public.search_query_log
-  FOR INSERT TO anon, authenticated WITH CHECK (true);
+-- Direct anon INSERT is NOT permitted. All logging goes through service-role
+-- (which bypasses RLS) via the server-side /api/search route.
+-- Authenticated editors/admins can read for signal analysis.
+DROP POLICY IF EXISTS sql_anon_insert   ON public.search_query_log;
+DROP POLICY IF EXISTS sql_admin_select  ON public.search_query_log;
 
 CREATE POLICY sql_admin_select ON public.search_query_log
   FOR SELECT TO authenticated

@@ -161,7 +161,7 @@ export const OpportunityService = {
           brief: input.brief ?? {},
           metadata: input.metadata ?? {},
           created_by: input.created_by ?? actor?.id ?? null,
-          created_by_type: input.created_by_type ?? "manual",
+          created_by_type: input.created_by_type ?? null,
         })
         .select()
         .single()
