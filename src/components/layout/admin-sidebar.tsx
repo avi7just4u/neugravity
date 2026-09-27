@@ -25,6 +25,7 @@ import {
   X,
   ScrollText,
   Network,
+  Bot,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -129,6 +130,12 @@ const navSections: NavSection[] = [
   {
     title: "SYSTEM",
     items: [
+      {
+        label: "Automation",
+        href: "/admin/system/automation",
+        icon: <Bot className="h-4 w-4" />,
+        requiredRoles: ["admin", "super_admin", "analyst"],
+      },
       {
         label: "Jobs",
         href: "/admin/system/jobs",

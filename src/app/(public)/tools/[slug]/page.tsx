@@ -9,6 +9,8 @@ import { Globe, ChevronRight, GitBranch, BookOpen, CheckCircle, AlertCircle, Sta
 import { ToolService } from "@/lib/services/tool.service"
 import type { Tool } from "@/types"
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+
 export async function generateMetadata({
   params,
 }: {
@@ -17,9 +19,25 @@ export async function generateMetadata({
   const { slug } = await params
   const tool = await ToolService.getToolBySlug(slug)
   if (!tool) return { title: "Not Found" }
+  const title = tool.seo_title ?? `${tool.name} — NeuGravity`
+  const description = (tool.seo_description ?? tool.tagline ?? tool.description) || undefined
+  const url = `${siteUrl}/tools/${slug}`
   return {
-    title: tool.seo_title ?? `${tool.name} — NeuGravity`,
-    description: tool.seo_description ?? tool.tagline ?? tool.description ?? undefined,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      siteName: "NeuGravity",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   }
 }
 

@@ -8,13 +8,31 @@ import { Badge } from "@/components/ui/badge"
 import { ComparisonService } from "@/lib/services/comparison.service"
 import { formatDate } from "@/lib/utils"
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const c = await ComparisonService.getComparisonBySlug(slug)
   if (!c) return {}
+  const title = c.seo_title ?? c.title
+  const description = (c.seo_description ?? c.description) || undefined
+  const url = `${siteUrl}/compare/${slug}`
   return {
-    title: c.seo_title ?? c.title,
-    description: c.seo_description ?? c.description ?? undefined,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      siteName: "NeuGravity",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   }
 }
 

@@ -8,13 +8,31 @@ import { Button } from "@/components/ui/button"
 import { Globe, ChevronRight, ExternalLink } from "lucide-react"
 import { CompanyService } from "@/lib/services/company.service"
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const co = await CompanyService.getCompanyBySlug(slug)
   if (!co) return {}
+  const title = co.seo_title ?? co.name
+  const description = (co.seo_description ?? co.description) || undefined
+  const url = `${siteUrl}/companies/${slug}`
   return {
-    title: co.seo_title ?? co.name,
-    description: co.seo_description ?? co.description ?? undefined,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      siteName: "NeuGravity",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   }
 }
 

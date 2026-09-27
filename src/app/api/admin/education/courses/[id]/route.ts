@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { requireAdminAuth } from "@/lib/auth/admin-auth"
+import { revalidatePath } from "next/cache"
 
 const EDUCATION_ROLES = ["admin", "super_admin", "course_manager", "editor"]
 const PUBLISH_ROLES = ["admin", "super_admin", "course_manager"]
@@ -118,6 +119,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (updates.status === "published" && data) {
+    const slug = (data as Record<string, unknown>).slug as string | undefined
+    revalidatePath("/courses")
+    revalidatePath("/learn")
+    if (slug) revalidatePath(`/courses/${slug}`)
+  }
+
   return NextResponse.json({ data })
 }
 

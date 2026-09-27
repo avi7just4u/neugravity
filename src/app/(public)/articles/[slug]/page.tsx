@@ -8,13 +8,32 @@ import { Clock, ChevronRight } from "lucide-react"
 import { ContentService } from "@/lib/services/content.service"
 import { formatDate, formatRelativeDate } from "@/lib/utils"
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const article = await ContentService.getArticleBySlug(slug)
   if (!article) return {}
+  const title = article.seo_title ?? article.title
+  const description = (article.seo_description ?? article.excerpt) || undefined
+  const url = `${siteUrl}/articles/${slug}`
   return {
-    title: article.seo_title ?? article.title,
-    description: article.seo_description ?? article.excerpt ?? undefined,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "article",
+      publishedTime: article.published_at ?? undefined,
+      siteName: "NeuGravity",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   }
 }
 

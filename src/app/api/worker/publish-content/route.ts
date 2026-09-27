@@ -81,6 +81,10 @@ export async function POST(request: NextRequest) {
   revalidatePath("/news")
   revalidatePath(`/news/${item.slug}`)
   revalidatePath("/")
+  // Revalidate adjacent indexes that display news on homepage/feeds
+  revalidatePath("/tech")
+  revalidatePath("/tools")
+  revalidatePath("/companies")
 
   return NextResponse.json({ published: true, slug: item.slug })
 }
