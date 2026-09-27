@@ -65,36 +65,39 @@ export async function analyzeSearchSignals(opts: {
 
     const { data: rows } = await db
       .from("search_query_log")
-      .select("normalized, results_count, has_results")
+      .select("query, normalized, results_count")
       .gte("created_at", since)
 
     if (!rows || rows.length === 0) return candidates
 
-    // Aggregate in JS
-    const agg = new Map<string, { count: number; total_results: number }>()
+    // Aggregate in JS — track original query for human-readable topic/title
+    const agg = new Map<string, { count: number; total_results: number; bestQuery: string }>()
     for (const row of rows) {
       const k = row.normalized as string
       if (!k) continue
-      const e = agg.get(k) ?? { count: 0, total_results: 0 }
+      const e = agg.get(k) ?? { count: 0, total_results: 0, bestQuery: row.query as string }
       e.count++
       e.total_results += (row.results_count as number) ?? 0
+      // Keep the shortest original query as the most readable label
+      if ((row.query as string).length < e.bestQuery.length) e.bestQuery = row.query as string
       agg.set(k, e)
     }
 
-    for (const [normalized, { count, total_results }] of agg.entries()) {
+    for (const [normalized, { count, total_results, bestQuery }] of agg.entries()) {
       const avgResults = count > 0 ? total_results / count : 0
       const isZeroResult = avgResults < 1
       const isWeakResult = avgResults > 0 && avgResults < 3
+      const displayTopic = bestQuery.trim()
 
       if (isZeroResult && count >= (opts.zeroResultsMinCount ?? 5)) {
         const sc = score({ searchCount: count, hasExistingContent: false })
         candidates.push({
-          topic: normalized,
-          title_suggestion: `What is ${normalized}?`,
+          topic: displayTopic,
+          title_suggestion: `What is ${displayTopic}?`,
           content_type: "article",
           audience: "developers, technologists",
-          reason: `${count} internal searches for "${normalized}" with zero results`,
-          why_now: `NeuGravity users are actively searching for "${normalized}" and finding nothing.`,
+          reason: `${count} internal searches for "${displayTopic}" with zero results`,
+          why_now: `NeuGravity users are actively searching for "${displayTopic}" and finding nothing.`,
           gap_type: "missing",
           priority: toPriority(sc),
           source: "search_signal",
@@ -110,12 +113,12 @@ export async function analyzeSearchSignals(opts: {
       } else if (isWeakResult && count >= (opts.weakResultsMinCount ?? 20)) {
         const sc = score({ searchCount: count, hasExistingContent: true })
         candidates.push({
-          topic: normalized,
-          title_suggestion: `${normalized} — Improve coverage`,
+          topic: displayTopic,
+          title_suggestion: `${displayTopic} — Improve coverage`,
           content_type: "update_existing_content",
           audience: "developers, technologists",
-          reason: `${count} searches for "${normalized}" yield only ~${Math.round(avgResults)} results`,
-          why_now: `Existing coverage for "${normalized}" is weak relative to search interest.`,
+          reason: `${count} searches for "${displayTopic}" yield only ~${Math.round(avgResults)} results`,
+          why_now: `Existing coverage for "${displayTopic}" is weak relative to search interest.`,
           gap_type: "weak",
           priority: toPriority(sc),
           source: "search_signal",
