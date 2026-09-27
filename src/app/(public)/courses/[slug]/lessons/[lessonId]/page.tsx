@@ -201,7 +201,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
         <div className="flex items-center gap-4 px-4 h-14">
           <Link
             href={`/courses/${slug}`}
-            className="flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-white hover:text-blue-600 transition-colors shrink-0 max-w-[200px]"
+            className="flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-white hover:text-indigo-600 transition-colors shrink-0 max-w-[200px]"
           >
             <BookOpen className="h-4 w-4 shrink-0 text-blue-500" />
             <span className="truncate hidden sm:block">{course.title}</span>
@@ -215,7 +215,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-label={`Course progress: ${courseProgress.percent}%`}
-                className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                className="h-full rounded-full bg-indigo-600 transition-all duration-500"
                 style={{ width: `${courseProgress.percent}%` }}
               />
             </div>
@@ -253,7 +253,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
                       href={`/courses/${slug}/lessons/${l.id}`}
                       className={`flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors ${
                         isActive
-                          ? "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 font-medium"
+                          ? "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-medium"
                           : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
                       }`}
                     >
@@ -261,7 +261,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
                         {status === "completed"
                           ? <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                           : isActive
-                          ? <span className="h-2 w-2 rounded-full bg-blue-500 inline-block" />
+                          ? <span className="h-2 w-2 rounded-full bg-indigo-500 inline-block" />
                           : <span className="h-2 w-2 rounded-full border border-zinc-300 dark:border-zinc-600 inline-block" />
                         }
                       </span>
@@ -301,7 +301,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
                         href={`/courses/${slug}/lessons/${l.id}`}
                         className={`flex items-center gap-2 px-4 py-2 text-xs transition-colors ${
                           isActive
-                            ? "bg-blue-50 dark:bg-blue-950/30 text-blue-600 font-medium"
+                            ? "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 font-medium"
                             : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                         }`}
                       >
@@ -332,7 +332,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
                 <span>{currentModule?.title}</span>
               </div>
               <div className="flex items-start justify-between gap-4">
-                <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white leading-tight">
+                <h1 className="text-headline text-zinc-900 dark:text-white">
                   {lesson.title}
                 </h1>
                 {isCompleted && (
@@ -406,41 +406,62 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
             )}
 
             {/* Nav + complete bar */}
-            <div className="flex items-center justify-between gap-4 pt-6 border-t border-zinc-100 dark:border-zinc-800">
-              <div>
-                {prevLesson ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/courses/${slug}/lessons/${prevLesson.id}`}>
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      <span>Previous</span>
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/courses/${slug}`}>
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Course
-                    </Link>
-                  </Button>
-                )}
-              </div>
+            <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 flex justify-start">
+                  {prevLesson ? (
+                    <Button variant="outline" size="sm" asChild className="max-w-[180px]">
+                      <Link href={`/courses/${slug}/lessons/${prevLesson.id}`}>
+                        <ChevronLeft className="h-4 w-4 shrink-0" />
+                        <span className="truncate hidden sm:block">{prevLesson.title}</span>
+                        <span className="sm:hidden">Previous</span>
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/courses/${slug}`}>
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="hidden sm:block">Back to Course</span>
+                      </Link>
+                    </Button>
+                  )}
+                </div>
 
-              <div className="flex items-center gap-2">
                 {!isCompleted && !isInteractive && (
-                  <MarkCompleteButton lessonId={lessonId} courseSlug={slug} />
+                  <div className="shrink-0">
+                    <MarkCompleteButton lessonId={lessonId} courseSlug={slug} />
+                  </div>
                 )}
-                {nextLesson ? (
-                  <Button size="sm" asChild>
-                    <Link href={`/courses/${slug}/lessons/${nextLesson.id}`}>
-                      <span>Next</span>
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button size="sm" asChild>
-                    <Link href={`/courses/${slug}`}>Finish Course</Link>
-                  </Button>
+                {isCompleted && (
+                  <div className="shrink-0 flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="hidden sm:block">Completed</span>
+                  </div>
                 )}
+
+                <div className="flex-1 flex justify-end">
+                  {nextLesson ? (
+                    <Button
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white max-w-[180px]"
+                      asChild
+                    >
+                      <Link href={`/courses/${slug}/lessons/${nextLesson.id}`}>
+                        <span className="truncate hidden sm:block">{nextLesson.title}</span>
+                        <span className="sm:hidden">Next</span>
+                        <ChevronRight className="h-4 w-4 shrink-0" />
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                      asChild
+                    >
+                      <Link href={`/courses/${slug}`}>Finish Course →</Link>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

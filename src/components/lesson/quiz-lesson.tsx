@@ -165,7 +165,7 @@ export function QuizLesson({ quiz, questions, lessonId, onComplete }: QuizLesson
                     }}
                     className={`w-full text-left px-4 py-2.5 rounded-lg border text-sm transition-colors ${
                       isSelected
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
+                        ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300"
                         : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300"
                     }`}
                   >
