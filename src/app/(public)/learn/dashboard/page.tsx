@@ -4,12 +4,13 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { EnrollmentService } from "@/lib/services/enrollment.service"
-import { BookOpen, Clock, ArrowRight } from "lucide-react"
+import { BookOpen, Clock, ArrowRight, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export const metadata: Metadata = {
   title: "My Learning",
   description: "Your enrolled courses and learning progress.",
+  robots: { index: false },
 }
 
 export const dynamic = "force-dynamic"
@@ -17,16 +18,12 @@ export const dynamic = "force-dynamic"
 export default async function LearnerDashboardPage() {
   const client = await createClient()
   const { data: { user } } = await client.auth.getUser()
-
-  if (!user) {
-    redirect("/login?next=/learn/dashboard")
-  }
+  if (!user) redirect("/login?next=/learn/dashboard")
 
   const enrollments = await EnrollmentService.getUserEnrollments(user.id)
-
-  // Fetch course slugs and titles for all enrolled courses
   const courseIds = enrollments.map((e) => e.course_id)
   const courseMap: Record<string, { slug: string; title: string }> = {}
+
   if (courseIds.length > 0) {
     const db = createAdminClient()
     const { data: courses } = await db
@@ -39,26 +36,37 @@ export default async function LearnerDashboardPage() {
     }
   }
 
-  // Get course progress for all enrolled courses
-  const progressList = await Promise.all(
-    enrollments.map((e) => EnrollmentService.getCourseProgress(user.id, e.course_id))
-  )
+  const [progressList, continueList] = await Promise.all([
+    Promise.all(enrollments.map((e) => EnrollmentService.getCourseProgress(user.id, e.course_id))),
+    Promise.all(enrollments.map((e) => EnrollmentService.getContinueLearningLesson(user.id, e.course_id))),
+  ])
 
   const enrolledWithProgress = enrollments.map((e, i) => ({
     enrollment: e,
     progress: progressList[i],
+    continueLesson: continueList[i],
     course: courseMap[e.course_id] ?? null,
   }))
 
   return (
-    <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-1">My Learning</h1>
-        <p className="text-zinc-500 dark:text-zinc-400">
-          {enrollments.length === 0
-            ? "You haven't enrolled in any courses yet."
-            : `${enrollments.length} course${enrollments.length !== 1 ? "s" : ""} enrolled`}
-        </p>
+    <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white mb-1">My Learning</h1>
+          <p className="text-zinc-500 dark:text-zinc-400">
+            {enrollments.length === 0
+              ? "You haven't enrolled in any courses yet."
+              : `${enrollments.length} course${enrollments.length !== 1 ? "s" : ""} enrolled`}
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/learn">Browse Paths</Link>
+          </Button>
+          <Button size="sm" asChild>
+            <Link href="/courses">Browse Courses</Link>
+          </Button>
+        </div>
       </div>
 
       {enrolledWithProgress.length === 0 ? (
@@ -75,12 +83,12 @@ export default async function LearnerDashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {enrolledWithProgress.map(({ enrollment, progress, course }) => {
+          {enrolledWithProgress.map(({ enrollment, progress, continueLesson, course }) => {
             const courseHref = course ? `/courses/${course.slug}` : "/courses"
-            const continueHref =
-              course && progress.last_lesson_id
-                ? `/courses/${course.slug}/lessons/${progress.last_lesson_id}`
-                : courseHref
+            const continueHref = course && continueLesson.lessonId
+              ? `/courses/${course.slug}/lessons/${continueLesson.lessonId}`
+              : courseHref
+            const isComplete = progress.percent === 100
 
             return (
               <div
@@ -88,18 +96,20 @@ export default async function LearnerDashboardPage() {
                 className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-semibold text-zinc-900 dark:text-white line-clamp-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-zinc-900 dark:text-white line-clamp-2 text-sm">
                       {course?.title ?? `Course ${enrollment.course_id.slice(0, 8)}…`}
                     </div>
                     <div className="text-xs text-zinc-400 mt-0.5 capitalize">{enrollment.status}</div>
                   </div>
+                  {isComplete && <TrendingUp className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />}
                 </div>
 
-                {/* Progress bar */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-zinc-500">{progress.completed_lessons}/{progress.total_lessons} lessons</span>
+                    <span className="text-xs text-zinc-500">
+                      {progress.completed_lessons}/{progress.total_lessons} lessons
+                    </span>
                     <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{progress.percent}%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
@@ -108,10 +118,19 @@ export default async function LearnerDashboardPage() {
                       style={{ width: `${progress.percent}%` }}
                     />
                   </div>
+                  {continueLesson.lessonTitle && !isComplete && (
+                    <p className="text-xs text-zinc-400 mt-1.5 line-clamp-1">
+                      Next: {continueLesson.lessonTitle}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {progress.last_lesson_id ? (
+                  {isComplete ? (
+                    <Button size="sm" variant="outline" className="flex-1" asChild>
+                      <Link href={courseHref}>Review Course</Link>
+                    </Button>
+                  ) : continueLesson.lessonId ? (
                     <Button size="sm" className="flex-1" asChild>
                       <Link href={continueHref}>
                         Continue <ArrowRight className="h-3.5 w-3.5 ml-1" />

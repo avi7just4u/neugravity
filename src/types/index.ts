@@ -545,6 +545,51 @@ export interface CourseProject {
   updated_at: string
 }
 
+export interface QuizAttempt {
+  id: string
+  user_id: string
+  quiz_id: string
+  lesson_id: string
+  answers: Record<string, unknown>
+  score: number
+  passed: boolean
+  started_at: string
+  completed_at: string | null
+  created_at: string
+}
+
+export interface QuizQuestion {
+  id: string
+  quiz_id: string
+  question_text: string
+  question_type: "single_choice" | "multiple_choice" | "true_false" | "short_answer"
+  options: Array<{ id: string; text: string }> | null
+  explanation: string | null
+  points: number
+  sort_order: number
+}
+
+export interface Quiz {
+  id: string
+  lesson_id: string
+  title: string
+  passing_score: number
+  time_limit_minutes: number | null
+  created_at: string
+}
+
+export interface ProjectSubmission {
+  id: string
+  user_id: string
+  project_id: string
+  course_id: string
+  submission_type: "text" | "url" | "github" | "file"
+  content: string | null
+  url: string | null
+  submitted_at: string
+  created_at: string
+}
+
 export interface Interview {
   id: string
   title: string

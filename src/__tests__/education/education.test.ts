@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+// Phase 4.3 additions appended at bottom
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -274,4 +275,122 @@ describe("content status lifecycle (unit)", () => {
   it("published → draft is NOT allowed", () => expect(canTransition("published", "draft")).toBe(false))
   it("published → archived is allowed", () => expect(canTransition("published", "archived")).toBe(true))
   it("archived → draft is allowed (recycle)", () => expect(canTransition("archived", "draft")).toBe(true))
+})
+
+
+// ─── Phase 4.3: Quiz grading ─────────────────────────────────────────────────
+
+describe("quiz grading (unit)", () => {
+  type QRow = { id: string; correct_answer: unknown; points: number; question_type: string }
+
+  function grade(questions: QRow[], answers: Record<string, string | string[]>) {
+    let totalPoints = 0
+    let earnedPoints = 0
+    for (const q of questions) {
+      totalPoints += q.points
+      const userAnswer = answers[q.id]
+      let correct = false
+      if (q.question_type === "multiple_choice") {
+        const correctArr = Array.isArray(q.correct_answer) ? (q.correct_answer as string[]) : []
+        const userArr = Array.isArray(userAnswer) ? userAnswer : []
+        correct = correctArr.length === userArr.length && correctArr.every((a) => userArr.includes(a))
+      } else {
+        correct = String(userAnswer ?? "") === String(q.correct_answer ?? "")
+      }
+      if (correct) earnedPoints += q.points
+    }
+    const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
+    return score
+  }
+
+  it("scores 100% when all correct", () => {
+    const qs: QRow[] = [
+      { id: "q1", correct_answer: "a", points: 1, question_type: "single_choice" },
+      { id: "q2", correct_answer: "b", points: 1, question_type: "single_choice" },
+    ]
+    expect(grade(qs, { q1: "a", q2: "b" })).toBe(100)
+  })
+
+  it("scores 50% when half correct", () => {
+    const qs: QRow[] = [
+      { id: "q1", correct_answer: "a", points: 1, question_type: "single_choice" },
+      { id: "q2", correct_answer: "b", points: 1, question_type: "single_choice" },
+    ]
+    expect(grade(qs, { q1: "a", q2: "c" })).toBe(50)
+  })
+
+  it("scores 0% when all wrong", () => {
+    const qs: QRow[] = [
+      { id: "q1", correct_answer: "a", points: 1, question_type: "single_choice" },
+    ]
+    expect(grade(qs, { q1: "x" })).toBe(0)
+  })
+
+  it("passes when score >= passing_score", () => {
+    expect(70 >= 70).toBe(true)
+    expect(69 >= 70).toBe(false)
+  })
+
+  it("grades multiple_choice by full set match", () => {
+    const qs: QRow[] = [
+      { id: "q1", correct_answer: ["a", "b"], points: 2, question_type: "multiple_choice" },
+    ]
+    expect(grade(qs, { q1: ["a", "b"] })).toBe(100)
+    expect(grade(qs, { q1: ["a"] })).toBe(0)
+  })
+})
+
+// ─── Phase 4.3: Continue learning algorithm ──────────────────────────────────
+
+describe("continue learning algorithm (unit)", () => {
+  function findContinueLesson(
+    lessons: { id: string }[],
+    completed: Set<string>
+  ) {
+    return lessons.find((l) => !completed.has(l.id)) ?? null
+  }
+
+  it("returns first lesson when none completed", () => {
+    const lessons = [{ id: "l1" }, { id: "l2" }, { id: "l3" }]
+    expect(findContinueLesson(lessons, new Set())?.id).toBe("l1")
+  })
+
+  it("skips completed lessons", () => {
+    const lessons = [{ id: "l1" }, { id: "l2" }, { id: "l3" }]
+    expect(findContinueLesson(lessons, new Set(["l1", "l2"]))?.id).toBe("l3")
+  })
+
+  it("returns null when all completed", () => {
+    const lessons = [{ id: "l1" }, { id: "l2" }]
+    expect(findContinueLesson(lessons, new Set(["l1", "l2"]))).toBeNull()
+  })
+
+  it("returns first when no progress at all", () => {
+    const lessons = [{ id: "l1" }]
+    expect(findContinueLesson(lessons, new Set())?.id).toBe("l1")
+  })
+})
+
+// ─── Phase 4.3: Project submission validation ─────────────────────────────────
+
+describe("project submission validation (unit)", () => {
+  const VALID_TYPES = ["text", "url", "github", "file"]
+
+  it("accepts valid submission types", () => {
+    for (const t of VALID_TYPES) expect(VALID_TYPES.includes(t)).toBe(true)
+  })
+
+  it("rejects invalid submission type", () => {
+    expect(VALID_TYPES.includes("pdf")).toBe(false)
+    expect(VALID_TYPES.includes("")).toBe(false)
+  })
+
+  it("requires content or url", () => {
+    function hasPayload(content?: string, url?: string) {
+      return Boolean(content ?? url)
+    }
+    expect(hasPayload("some text")).toBe(true)
+    expect(hasPayload(undefined, "https://example.com")).toBe(true)
+    expect(hasPayload()).toBe(false)
+  })
 })

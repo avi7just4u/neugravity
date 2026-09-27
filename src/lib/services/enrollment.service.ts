@@ -177,6 +177,50 @@ export const EnrollmentService = {
     }
   },
 
+  async getContinueLearningLesson(userId: string, courseId: string): Promise<{
+    lessonId: string | null
+    moduleTitle: string | null
+    lessonTitle: string | null
+  }> {
+    try {
+      const db = createAdminClient()
+      const { data: moduleData } = await db
+        .from("course_modules")
+        .select("id,title,sort_order")
+        .eq("course_id", courseId)
+        .order("sort_order")
+
+      const modules = (moduleData ?? []) as { id: string; title: string; sort_order: number }[]
+      if (!modules.length) return { lessonId: null, moduleTitle: null, lessonTitle: null }
+
+      for (const mod of modules) {
+        const { data: lessonData } = await db
+          .from("lessons")
+          .select("id,title,sort_order")
+          .eq("module_id", mod.id)
+          .eq("status", "published")
+          .order("sort_order")
+
+        const lessons = (lessonData ?? []) as { id: string; title: string; sort_order: number }[]
+        for (const lesson of lessons) {
+          const { data: prog } = await db
+            .from("lesson_progress")
+            .select("status")
+            .eq("user_id", userId)
+            .eq("lesson_id", lesson.id)
+            .single()
+
+          if (!prog || (prog as { status: string }).status !== "completed") {
+            return { lessonId: lesson.id, moduleTitle: mod.title, lessonTitle: lesson.title }
+          }
+        }
+      }
+      return { lessonId: null, moduleTitle: null, lessonTitle: null }
+    } catch {
+      return { lessonId: null, moduleTitle: null, lessonTitle: null }
+    }
+  },
+
   // Server-side: get current user ID from session
   async getCurrentUserId(): Promise<string | null> {
     try {
