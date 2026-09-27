@@ -1,5 +1,38 @@
 # Phase 4.3 — Learner Experience + Lesson Player
 
+## Production Deployment
+
+| Item | Value |
+|------|-------|
+| Deployment URL | https://neugravity.vercel.app |
+| Deployment ID | dpl_6ZMYvWvhkMpup8CqzqZkuUfcRD2V |
+| Commit | 8ba5aec feat: Phase 4.3 — Learner Experience + Lesson Player |
+| Tag | phase-4.3 |
+| Migration 021 | Applied (quiz_attempts + project_submissions, RLS, 6 FKs, 8 indexes) |
+| TypeScript | 0 errors |
+| Tests | 65/65 pass |
+| Build | 63 routes, clean |
+
+### Smoke Test Results
+
+| Route | Status | Notes |
+|-------|--------|-------|
+| / | 200 | ✓ |
+| /learn | 200 | ✓ |
+| /courses | 200 | ✓ |
+| /login | 200 | ✓ |
+| /status | 200 | ✓ |
+| /tech | 200 | ✓ |
+| /news | 200 | ✓ |
+| /tools | 200 | ✓ |
+| /learn/dashboard (anon) | 307 → /login?next=/learn/dashboard | ✓ auth gate |
+| /admin (anon) | 307 → /login | ✓ auth gate |
+| /courses/[slug]/lessons/[lessonId] (anon) | 307 → /login | ✓ auth gate |
+| /api/quiz/[id] (GET, anon) | 405 | ✓ POST-only |
+| /api/project/[id] (GET, anon) | 401 | ✓ auth required |
+
+---
+
 ## Audit Baseline
 
 Phase 4.2 state at start of Phase 4.3:
