@@ -26,6 +26,8 @@ import {
   ScrollText,
   Network,
   Bot,
+  Lightbulb,
+  CalendarDays,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -49,6 +51,23 @@ const navSections: NavSection[] = [
         label: "Dashboard",
         href: "/admin",
         icon: <LayoutDashboard className="h-4 w-4" />,
+      },
+    ],
+  },
+  {
+    title: "EDITORIAL",
+    items: [
+      {
+        label: "Opportunities",
+        href: "/admin/content-opportunities",
+        icon: <Lightbulb className="h-4 w-4" />,
+        requiredRoles: ["admin", "super_admin", "editor", "author", "reviewer", "analyst"],
+      },
+      {
+        label: "Content Calendar",
+        href: "/admin/content-calendar",
+        icon: <CalendarDays className="h-4 w-4" />,
+        requiredRoles: ["admin", "super_admin", "editor", "author", "reviewer", "analyst"],
       },
     ],
   },

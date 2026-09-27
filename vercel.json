@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/check-freshness",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/analyze-opportunities",
+      "schedule": "0 3 * * *"
     }
   ]
 }

@@ -629,6 +629,153 @@ export interface StatusProvider {
   created_at: string
 }
 
+// ============================================================
+// Phase 4.5 — Content Intelligence + Editorial Opportunity Engine
+// ============================================================
+
+export type OpportunityContentType =
+  | "youtube_video"
+  | "short"
+  | "article"
+  | "technology_page"
+  | "tool_page"
+  | "comparison"
+  | "interview"
+  | "course"
+  | "learning_path"
+  | "newsletter"
+  | "update_existing_content"
+
+export type OpportunityStatus =
+  | "new"
+  | "review"
+  | "approved"
+  | "assigned"
+  | "in_progress"
+  | "completed"
+  | "dismissed"
+
+export type OpportunityPriority = "high" | "medium" | "low"
+
+export type GapType =
+  | "missing"
+  | "weak"
+  | "stale"
+  | "disconnected"
+  | "underdeveloped"
+  | "duplicate_candidate"
+
+export type OpportunitySource =
+  | "search_signal"
+  | "knowledge_gap"
+  | "news_signal"
+  | "tool_gap"
+  | "learning_gap"
+  | "youtube"
+  | "manual"
+
+export type EnterpriseRelevance = "low" | "medium" | "high"
+
+export interface ContentOpportunity {
+  id: string
+  topic: string
+  title_suggestion: string | null
+  content_type: OpportunityContentType
+  audience: string | null
+  reason: string | null
+  why_now: string | null
+  gap_type: GapType | null
+  priority: OpportunityPriority
+  status: OpportunityStatus
+  source: OpportunitySource | null
+  related_entity_type: string | null
+  related_entity_id: string | null
+  related_entity_name: string | null
+  enterprise_relevance: EnterpriseRelevance
+  target_publish_date: string | null
+  assigned_to: string | null
+  brief: VideoBrief | ArticleBrief | TechnologyBrief | Record<string, unknown>
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+  reviewed_at: string | null
+  completed_at: string | null
+  dismissed_at: string | null
+  created_by: string | null
+  created_by_type: "editor" | "system" | "ai" | null
+  // Virtual / joined
+  dedup_key?: string
+  assigned_user?: { display_name: string | null; email: string | null } | null
+}
+
+export interface VideoBrief {
+  working_title: string
+  hook: string
+  audience: string
+  problem: string
+  key_questions: string[]
+  story_angle: string
+  analogy_opportunities: string[]
+  visual_opportunities: string[]
+  screen_demo_opportunities: string[]
+  chapters: Array<{ title: string; duration_estimate: string; description: string }>
+  related_neugravity_entities: Array<{ type: string; name: string; url: string }>
+  suggested_shorts: Array<{ hook: string; concept: string }>
+}
+
+export interface ArticleBrief {
+  working_title: string
+  search_intent: string
+  audience: string
+  key_questions: string[]
+  existing_neugravity_content: Array<{ type: string; title: string; url: string }>
+  source_requirements: string[]
+  technology_entities: string[]
+  tool_relationships: string[]
+  comparison_relationships: string[]
+  outline: Array<{ heading: string; notes: string }>
+}
+
+export interface TechnologyBrief {
+  working_title: string
+  definition: string
+  explanation_modes: string[]
+  prerequisites: string[]
+  related_concepts: string[]
+  related_tools: string[]
+  related_companies: string[]
+  recent_news: string[]
+  suggested_courses: string[]
+}
+
+export interface SearchQueryStat {
+  normalized: string
+  count: number
+  avg_results: number
+  has_results: boolean
+}
+
+export interface ContentEcosystem {
+  entity_type: string
+  entity_id: string
+  entity_name: string
+  coverage: {
+    technology: boolean
+    news: boolean
+    tools: boolean
+    comparison: boolean
+    course: boolean
+    learning_path: boolean
+    interview: boolean
+    article: boolean
+  }
+}
+
+export interface OpportunityListItem extends Omit<ContentOpportunity, "brief" | "metadata"> {
+  brief: Record<string, unknown>
+  metadata: Record<string, unknown>
+}
+
 export interface StatusIncident {
   id: string
   provider_id: string

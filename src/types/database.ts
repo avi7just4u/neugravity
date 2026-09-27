@@ -323,6 +323,53 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["enterprise_leads"]["Row"], "id" | "created_at" | "updated_at">
         Update: Partial<Database["public"]["Tables"]["enterprise_leads"]["Insert"]>
       }
+      content_opportunities: {
+        Row: {
+          id: string
+          topic: string
+          title_suggestion: string | null
+          content_type: string
+          audience: string | null
+          reason: string | null
+          why_now: string | null
+          gap_type: string | null
+          priority: string
+          status: string
+          source: string | null
+          related_entity_type: string | null
+          related_entity_id: string | null
+          related_entity_name: string | null
+          enterprise_relevance: string
+          target_publish_date: string | null
+          assigned_to: string | null
+          brief: Json
+          metadata: Json
+          dedup_key: string
+          created_at: string
+          updated_at: string
+          reviewed_at: string | null
+          completed_at: string | null
+          dismissed_at: string | null
+          created_by: string | null
+          created_by_type: string | null
+        }
+        Insert: Omit<Database["public"]["Tables"]["content_opportunities"]["Row"], "id" | "created_at" | "updated_at" | "dedup_key">
+        Update: Partial<Database["public"]["Tables"]["content_opportunities"]["Insert"]>
+      }
+      search_query_log: {
+        Row: {
+          id: string
+          query: string
+          normalized: string
+          results_count: number
+          has_results: boolean
+          session_id: string | null
+          user_id: string | null
+          created_at: string
+        }
+        Insert: Omit<Database["public"]["Tables"]["search_query_log"]["Row"], "id" | "created_at" | "has_results">
+        Update: Partial<Database["public"]["Tables"]["search_query_log"]["Insert"]>
+      }
     }
     Views: {
       [_ in never]: never
