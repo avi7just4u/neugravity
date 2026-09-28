@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"),
   title: {
     default: "NeuGravity — Understand Technology. Navigate What's Next.",
     template: "%s | NeuGravity",
@@ -79,6 +79,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-foreground focus:top-4 focus:left-4 focus:rounded-md">Skip to main content</a>
         {children}
       </body>
     </html>

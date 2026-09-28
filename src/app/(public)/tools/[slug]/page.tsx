@@ -9,7 +9,7 @@ import { Globe, ChevronRight, GitBranch, BookOpen, AlertCircle, Star, ArrowRight
 import { ToolService } from "@/lib/services/tool.service"
 import type { Tool } from "@/types"
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
 export async function generateMetadata({
   params,

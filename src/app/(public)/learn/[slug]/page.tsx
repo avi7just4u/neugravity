@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { BookOpen, Clock, ChevronRight, ArrowRight, CheckCircle } from "lucide-react"
 import { CourseService } from "@/lib/services/course.service"
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

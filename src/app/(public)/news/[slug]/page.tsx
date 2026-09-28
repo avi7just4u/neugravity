@@ -8,7 +8,7 @@ import { Clock, ChevronRight } from "lucide-react"
 import { ContentService } from "@/lib/services/content.service"
 import { formatDate, formatRelativeDate } from "@/lib/utils"
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -39,6 +39,26 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export function generateStaticParams() { return [] }
 
+function buildNewsJsonLd(item: { headline: string; summary?: string | null; published_at?: string | null; updated_at?: string | null }, url: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    headline: item.headline,
+    description: item.summary ?? undefined,
+    datePublished: item.published_at ?? undefined,
+    dateModified: item.updated_at ?? item.published_at ?? undefined,
+    author: { "@type": "Organization", name: "NeuGravity", url: siteUrl },
+    publisher: {
+      "@type": "Organization",
+      name: "NeuGravity",
+      url: siteUrl,
+      logo: { "@type": "ImageObject", url: `${siteUrl}/icon.png` },
+    },
+    url,
+  }
+}
+
 function importanceBadge(importance: number) {
   if (importance >= 9) return <Badge variant="brand">Breaking</Badge>
   if (importance >= 7) return <Badge variant="warning">Major</Badge>
@@ -53,8 +73,12 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
   // Fire-and-forget view count — do not await
   ContentService.incrementViewCount("news_item", item.id)
 
+  const newsUrl = `${siteUrl}/news/${slug}`
+  const newsJsonLd = buildNewsJsonLd(item, newsUrl)
+
   return (
     <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(newsJsonLd) }} />
       <nav className="flex items-center gap-1.5 text-sm text-zinc-400 mb-8" aria-label="Breadcrumb">
         <Link href="/" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Home</Link>
         <ChevronRight className="h-3.5 w-3.5" />

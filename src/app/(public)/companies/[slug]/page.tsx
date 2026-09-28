@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Globe, ChevronRight, ExternalLink } from "lucide-react"
 import { CompanyService } from "@/lib/services/company.service"
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -38,13 +38,36 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export function generateStaticParams() { return [] }
 
+function buildCompanyJsonLd(co: Awaited<ReturnType<typeof CompanyService.getCompanyBySlug>>, url: string) {
+  if (!co) return null
+  const sameAs: string[] = []
+  if (co.website_url) sameAs.push(co.website_url)
+  if (co.github_url) sameAs.push(co.github_url)
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: co.name,
+    url,
+    description: co.description ?? undefined,
+    ...(co.founded_year ? { foundingDate: String(co.founded_year) } : {}),
+    ...(co.headquarters ? { address: co.headquarters } : {}),
+    ...(sameAs.length > 0 ? { sameAs } : {}),
+  }
+}
+
 export default async function CompanyDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const co = await CompanyService.getCompanyBySlug(slug)
   if (!co) notFound()
 
+  const companyUrl = `${siteUrl}/companies/${slug}`
+  const companyJsonLd = buildCompanyJsonLd(co, companyUrl)
+
   return (
     <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8 py-8">
+      {companyJsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(companyJsonLd) }} />
+      )}
       <nav className="flex items-center gap-1.5 text-sm text-zinc-400 mb-8" aria-label="Breadcrumb">
         <Link href="/" className="hover:text-zinc-900 dark:hover:text-white transition-colors">Home</Link>
         <ChevronRight className="h-3.5 w-3.5" />

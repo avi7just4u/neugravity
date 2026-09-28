@@ -7,7 +7,7 @@ import { ComparisonService } from "@/lib/services/comparison.service"
 import { CourseService } from "@/lib/services/course.service"
 import { InterviewService } from "@/lib/services/interview.service"
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
 export const revalidate = 3600
 
@@ -22,9 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/learn`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteUrl}/courses`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
     { url: `${siteUrl}/interviews`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
-    { url: `${siteUrl}/work`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
     { url: `${siteUrl}/articles`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
-    { url: `${siteUrl}/community`, lastModified: new Date(), changeFrequency: "daily", priority: 0.6 },
     { url: `${siteUrl}/status`, lastModified: new Date(), changeFrequency: "hourly", priority: 0.7 },
     { url: `${siteUrl}/enterprise`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
     { url: `${siteUrl}/about`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.5 },

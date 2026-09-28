@@ -8,8 +8,11 @@ import { BookOpen, ArrowRight, Clock } from "lucide-react"
 import { CourseService } from "@/lib/services/course.service"
 
 export const metadata: Metadata = {
-  title: "Learn",
-  description: "Structured learning paths and courses for technology professionals.",
+  title: "Learn Technology — Courses & Learning Paths | NeuGravity",
+  description: "Structured learning paths and courses for technology professionals. From fundamentals to advanced practice.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"}/learn`,
+  },
 }
 
 const diffVariant: Record<string, "success" | "info" | "destructive"> = {
@@ -33,7 +36,7 @@ export default async function LearnPage() {
           <BookOpen className="h-4 w-4 text-zinc-400" />
           <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">Learn</span>
         </div>
-        <h1 className="text-4xl font-bold text-zinc-900 dark:text-white mb-3">Learn Technology</h1>
+        <h1 className="text-headline text-zinc-900 dark:text-white mb-3">Learn Technology</h1>
         <p className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed">
           Structured learning paths and courses built for technology professionals. From fundamentals to advanced practice.
         </p>

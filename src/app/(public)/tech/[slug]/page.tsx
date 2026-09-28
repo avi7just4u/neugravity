@@ -17,7 +17,7 @@ import { TechPageAnalytics } from "@/components/tech/tech-page-analytics"
 import { TECH_FLOWS } from "@/lib/knowledge/tech-flows"
 import type { Technology, ExplanationType, TechnologyWithRelations } from "@/types"
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
 export async function generateMetadata({
   params,

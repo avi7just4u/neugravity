@@ -15,7 +15,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import { EnrollButton } from "./enroll-button"
 import type { Lesson } from "@/types"
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

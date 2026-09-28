@@ -8,7 +8,7 @@ import { Clock, ChevronRight } from "lucide-react"
 import { ContentService } from "@/lib/services/content.service"
 import { formatDate, formatRelativeDate } from "@/lib/utils"
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.com"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
