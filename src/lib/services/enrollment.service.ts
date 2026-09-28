@@ -46,7 +46,7 @@ export const EnrollmentService = {
         .from("course_enrollments")
         .select("*")
         .eq("user_id", userId)
-        .eq("status", "active")
+        .in("status", ["active", "completed"])
         .order("enrolled_at", { ascending: false })
 
       return (data ?? []) as CourseEnrollment[]

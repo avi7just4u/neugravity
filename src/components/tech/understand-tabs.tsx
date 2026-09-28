@@ -42,7 +42,7 @@ export function UnderstandTabs({ available, defaultTab }: Props) {
                 if (el) el.style.display = type === tab.type ? "" : "none"
               })
             }}
-            className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium rounded-lg transition-colors min-h-[44px] ${
               active === tab.type
                 ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
                 : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"

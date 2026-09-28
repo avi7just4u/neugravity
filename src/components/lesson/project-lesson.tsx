@@ -96,7 +96,7 @@ export function ProjectLesson({
               href={value}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              className="mt-2 inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
             >
               View submission <ExternalLink className="h-3 w-3" />
             </a>
@@ -113,7 +113,7 @@ export function ProjectLesson({
               onChange={(e) => setValue(e.target.value)}
               placeholder={placeholder}
               rows={8}
-              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 py-3 text-sm text-zinc-900 dark:text-white resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 py-3 text-sm text-zinc-900 dark:text-white resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           ) : (
             <input
@@ -121,7 +121,7 @@ export function ProjectLesson({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={placeholder}
-              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 py-3 text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 py-3 text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           )}
           {error && (

@@ -188,7 +188,7 @@ export function Navbar() {
               </Link>
               <button
                 onClick={closeMobile}
-                className="flex items-center justify-center h-9 w-9 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="flex items-center justify-center h-11 w-11 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 aria-label="Close menu"
               >
                 <X className="h-4 w-4" />
