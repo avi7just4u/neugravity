@@ -107,17 +107,15 @@ const RADAR_TEXT: Record<string, string> = {
 }
 
 export default async function HomePage() {
-  const [trendingTech, featuredNews, featuredTools, comparisons] = await Promise.all([
+  const [trendingTech, featuredNews, latestNewsResult, featuredTools, comparisons] = await Promise.all([
     TechnologyService.getTrendingTechnologies(6),
     ContentService.getPublishedNews({ perPage: 4, featured: true }),
+    ContentService.getPublishedNews({ perPage: 4 }),
     ToolService.getFeaturedTools(6),
     ComparisonService.getPopularComparisons(5),
   ])
 
-  const latestNews =
-    featuredNews.data.length > 0
-      ? featuredNews.data
-      : await ContentService.getPublishedNews({ perPage: 4 }).then((r) => r.data)
+  const latestNews = featuredNews.data.length > 0 ? featuredNews.data : latestNewsResult.data
 
   return (
     <div className="flex flex-col">
