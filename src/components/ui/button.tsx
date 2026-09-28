@@ -22,7 +22,7 @@ const buttonVariants = cva(
           "hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100",
         link: "text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-100",
         brand:
-          "bg-blue-600 text-white hover:bg-blue-700",
+          "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-500/25",
       },
       size: {
         default: "h-9 px-4 py-2",

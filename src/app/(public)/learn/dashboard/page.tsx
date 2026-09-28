@@ -114,7 +114,7 @@ export default async function LearnerDashboardPage() {
                   </div>
                   <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-blue-500 transition-all"
+                      className="h-full rounded-full bg-indigo-600 transition-all"
                       style={{ width: `${progress.percent}%` }}
                     />
                   </div>

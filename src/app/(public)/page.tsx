@@ -101,7 +101,7 @@ const RADAR_BORDER: Record<string, string> = {
 }
 const RADAR_TEXT: Record<string, string> = {
   Adopt: "text-green-600 dark:text-green-400",
-  Trial: "text-blue-600 dark:text-blue-400",
+  Trial: "text-indigo-600 dark:text-indigo-400",
   Assess: "text-amber-600 dark:text-amber-400",
   Hold:  "text-red-600 dark:text-red-400",
 }

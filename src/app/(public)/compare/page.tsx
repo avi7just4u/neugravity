@@ -49,7 +49,7 @@ export default async function ComparePage() {
                   <Eye className="h-3 w-3" />{c.view_count.toLocaleString()}
                 </span>
               </div>
-              <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                 {c.title}
               </h2>
               {c.description && (
@@ -57,7 +57,7 @@ export default async function ComparePage() {
               )}
               <div className="flex items-center justify-between text-xs text-zinc-400">
                 {c.last_verified_at && <span>Updated {formatDate(c.last_verified_at)}</span>}
-                <span className="flex items-center gap-1 group-hover:text-blue-500 transition-colors ml-auto">
+                <span className="flex items-center gap-1 group-hover:text-indigo-500 transition-colors ml-auto">
                   Compare <ArrowRight className="h-3 w-3" />
                 </span>
               </div>

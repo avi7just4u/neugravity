@@ -54,7 +54,7 @@ export default function CommunityPage() {
           </form>
         </div>
 
-        <p className="text-sm text-zinc-400">Have questions? <Link href="/contact" className="text-blue-600 dark:text-blue-400 hover:underline">Contact us</Link></p>
+        <p className="text-sm text-zinc-400">Have questions? <Link href="/contact" className="text-indigo-600 dark:text-indigo-400 hover:underline">Contact us</Link></p>
       </div>
     </div>
   )

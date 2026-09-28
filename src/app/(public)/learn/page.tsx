@@ -70,7 +70,7 @@ export default async function LearnPage() {
                   <ArrowRight className="h-4 w-4 text-zinc-300 group-hover:text-zinc-600 transition-colors" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <h3 className="font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                     {p.title}
                   </h3>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
@@ -111,7 +111,7 @@ export default async function LearnPage() {
                   </Badge>
                 )}
                 <div>
-                  <h3 className="font-semibold text-sm text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                  <h3 className="font-semibold text-sm text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
                     {c.title}
                   </h3>
                   {c.short_description && (

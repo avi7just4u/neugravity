@@ -36,7 +36,7 @@ function CompanyCard({ co }: { co: Company }) {
         )}
       </div>
       <div>
-        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
           {co.name}
         </h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
@@ -45,7 +45,7 @@ function CompanyCard({ co }: { co: Company }) {
       </div>
       <div className="flex items-center justify-between text-xs text-zinc-400">
         {co.founded_year && <span>Founded {co.founded_year}</span>}
-        <span className="flex items-center gap-1 group-hover:text-blue-500 transition-colors ml-auto">
+        <span className="flex items-center gap-1 group-hover:text-indigo-500 transition-colors ml-auto">
           View <ArrowRight className="h-3 w-3" />
         </span>
       </div>

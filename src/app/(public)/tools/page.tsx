@@ -57,7 +57,7 @@ function ToolCard({ tool }: { tool: Tool }) {
         )}
       </div>
       <div>
-        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
           {tool.name}
         </h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-2">
@@ -73,7 +73,7 @@ function ToolCard({ tool }: { tool: Tool }) {
         ) : (
           <span className="text-xs text-zinc-400 capitalize">{tool.tool_type?.replace("_", " ") ?? ""}</span>
         )}
-        <span className="text-xs text-zinc-400 flex items-center gap-1 group-hover:text-blue-500 transition-colors">
+        <span className="text-xs text-zinc-400 flex items-center gap-1 group-hover:text-indigo-500 transition-colors">
           View <ArrowRight className="h-3 w-3" />
         </span>
       </div>

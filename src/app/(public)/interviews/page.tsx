@@ -29,7 +29,7 @@ function InterviewCard({ interview }: { interview: Interview }) {
         )}
       </div>
       <div>
-        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug mb-1">
+        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug mb-1">
           {interview.title}
         </h2>
         {interview.guest_role && (
@@ -51,7 +51,7 @@ function InterviewCard({ interview }: { interview: Interview }) {
             <span>{formatRelativeDate(interview.published_at)}</span>
           )}
         </div>
-        <span className="text-xs text-zinc-400 flex items-center gap-1 group-hover:text-blue-500 transition-colors">
+        <span className="text-xs text-zinc-400 flex items-center gap-1 group-hover:text-indigo-500 transition-colors">
           Watch <ArrowRight className="h-3 w-3" />
         </span>
       </div>

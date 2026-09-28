@@ -203,7 +203,7 @@ export default async function LessonViewerPage({ params }: { params: Promise<Les
             href={`/courses/${slug}`}
             className="flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-white hover:text-indigo-600 transition-colors shrink-0 max-w-[200px]"
           >
-            <BookOpen className="h-4 w-4 shrink-0 text-blue-500" />
+            <BookOpen className="h-4 w-4 shrink-0 text-indigo-500" />
             <span className="truncate hidden sm:block">{course.title}</span>
           </Link>
 

@@ -132,7 +132,7 @@ export default async function InterviewDetailPage({
                 href={interview.video_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
               >
                 Watch on external platform →
               </a>
@@ -141,7 +141,7 @@ export default async function InterviewDetailPage({
 
           <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
             <h3 className="font-semibold text-sm text-zinc-900 dark:text-white mb-3">More Interviews</h3>
-            <Link href="/interviews" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <Link href="/interviews" className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
               Browse all interviews →
             </Link>
           </div>

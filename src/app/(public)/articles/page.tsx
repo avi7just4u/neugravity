@@ -39,14 +39,14 @@ export default async function ArticlesPage() {
           {featured && (
             <Link href={`/articles/${featured.slug}`} className="group block mb-10 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md transition-all">
               <Badge variant="brand" className="mb-3 text-xs">Featured</Badge>
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-2">{featured.title}</h2>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">{featured.title}</h2>
               {featured.excerpt && <p className="text-zinc-500 dark:text-zinc-400 mb-4">{featured.excerpt}</p>}
               <div className="flex items-center gap-4 text-xs text-zinc-400">
                 {featured.reading_time_minutes && (
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{featured.reading_time_minutes} min read</span>
                 )}
                 {featured.published_at && <span>{formatRelativeDate(featured.published_at)}</span>}
-                <span className="ml-auto flex items-center gap-1 group-hover:text-blue-500 transition-colors">Read article <ArrowRight className="h-3 w-3" /></span>
+                <span className="ml-auto flex items-center gap-1 group-hover:text-indigo-500 transition-colors">Read article <ArrowRight className="h-3 w-3" /></span>
               </div>
             </Link>
           )}
@@ -55,7 +55,7 @@ export default async function ArticlesPage() {
             {rest.map((a) => (
               <Link key={a.id} href={`/articles/${a.slug}`} className="group flex flex-col gap-3 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all">
                 <div>
-                  <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">{a.title}</h2>
+                  <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">{a.title}</h2>
                   {a.excerpt && <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">{a.excerpt}</p>}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-zinc-400 mt-auto">

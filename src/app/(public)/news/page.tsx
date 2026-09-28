@@ -56,7 +56,7 @@ export default async function NewsPage() {
                       </span>
                     )}
                   </div>
-                  <h2 className={`font-semibold text-zinc-900 dark:text-white leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors ${i === 0 ? "text-xl" : "text-base"}`}>
+                  <h2 className={`font-semibold text-zinc-900 dark:text-white leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors ${i === 0 ? "text-xl" : "text-base"}`}>
                     {item.headline}
                   </h2>
                   {i < 3 && item.summary && (

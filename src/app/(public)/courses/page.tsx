@@ -41,7 +41,7 @@ function CourseCard({ c }: { c: Course }) {
         {(c.price === 0 || c.price === null) && <Badge variant="success" className="text-xs">Free</Badge>}
       </div>
       <div>
-        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
+        <h2 className="font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">
           {c.title}
         </h2>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">{c.description ?? ""}</p>

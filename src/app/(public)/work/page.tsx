@@ -58,7 +58,7 @@ export default function WorkPage() {
           {featuredArticles.map((a) => (
             <Link key={a.slug} href={`/work/${a.slug}`} className="group flex flex-col gap-2 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all">
               <Badge variant="secondary" className="text-xs w-fit">{a.category}</Badge>
-              <h3 className="font-medium text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">{a.title}</h3>
+              <h3 className="font-medium text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">{a.title}</h3>
               <span className="text-xs text-zinc-400">{a.readingTime} min read</span>
             </Link>
           ))}
