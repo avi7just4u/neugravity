@@ -193,26 +193,39 @@ export const EnrollmentService = {
       const modules = (moduleData ?? []) as { id: string; title: string; sort_order: number }[]
       if (!modules.length) return { lessonId: null, moduleTitle: null, lessonTitle: null }
 
-      for (const mod of modules) {
-        const { data: lessonData } = await db
-          .from("lessons")
-          .select("id,title,sort_order")
-          .eq("module_id", mod.id)
-          .eq("status", "published")
-          .order("sort_order")
+      const moduleIds = modules.map((m) => m.id)
+      const { data: lessonData } = await db
+        .from("lessons")
+        .select("id,title,sort_order,module_id")
+        .in("module_id", moduleIds)
+        .eq("status", "published")
+        .order("sort_order")
 
-        const lessons = (lessonData ?? []) as { id: string; title: string; sort_order: number }[]
-        for (const lesson of lessons) {
-          const { data: prog } = await db
-            .from("lesson_progress")
-            .select("status")
-            .eq("user_id", userId)
-            .eq("lesson_id", lesson.id)
-            .single()
+      const lessons = (lessonData ?? []) as { id: string; title: string; sort_order: number; module_id: string }[]
+      if (!lessons.length) return { lessonId: null, moduleTitle: null, lessonTitle: null }
 
-          if (!prog || (prog as { status: string }).status !== "completed") {
-            return { lessonId: lesson.id, moduleTitle: mod.title, lessonTitle: lesson.title }
-          }
+      const { data: progressData } = await db
+        .from("lesson_progress")
+        .select("lesson_id,status")
+        .eq("user_id", userId)
+        .in("lesson_id", lessons.map((l) => l.id))
+
+      const completedIds = new Set(
+        ((progressData ?? []) as { lesson_id: string; status: string }[])
+          .filter((p) => p.status === "completed")
+          .map((p) => p.lesson_id)
+      )
+
+      const moduleOrder = new Map(modules.map((m, i) => [m.id, i]))
+      const sorted = [...lessons].sort((a, b) => {
+        const modDiff = (moduleOrder.get(a.module_id) ?? 0) - (moduleOrder.get(b.module_id) ?? 0)
+        return modDiff !== 0 ? modDiff : a.sort_order - b.sort_order
+      })
+
+      for (const lesson of sorted) {
+        if (!completedIds.has(lesson.id)) {
+          const mod = modules.find((m) => m.id === lesson.module_id)
+          return { lessonId: lesson.id, moduleTitle: mod?.title ?? null, lessonTitle: lesson.title }
         }
       }
       return { lessonId: null, moduleTitle: null, lessonTitle: null }
