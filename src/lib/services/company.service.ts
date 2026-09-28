@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server"
+import { createAnonClient } from "@/lib/supabase/server"
 import { ENV } from "@/lib/config/environment"
 import type { Company, PaginatedResponse } from "@/types"
 
@@ -14,7 +14,7 @@ export const CompanyService = {
     const to = from + perPage - 1
 
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       let query = supabase
         .from("companies")
         .select("*", { count: "exact" })
@@ -44,7 +44,7 @@ export const CompanyService = {
 
   async getCompanyBySlug(slug: string): Promise<Company | null> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       const { data, error } = await supabase
         .from("companies")
         .select("*")
@@ -61,7 +61,7 @@ export const CompanyService = {
 
   async getFeaturedCompanies(limit = 8): Promise<Company[]> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       const { data, error } = await supabase
         .from("companies")
         .select("*")

@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server"
+import { createAnonClient } from "@/lib/supabase/server"
 import { ENV } from "@/lib/config/environment"
 import type { Article, NewsItem, PaginatedResponse } from "@/types"
 
@@ -15,7 +15,7 @@ export const ContentService = {
     const to = from + perPage - 1
 
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       let query = supabase
         .from("articles")
         .select("id,slug,title,subtitle,excerpt,hero_image_url,author_id,category_id,status,published_at,reading_time_minutes,featured,view_count,share_count,created_at,updated_at", { count: "exact" })
@@ -49,7 +49,7 @@ export const ContentService = {
 
   async getArticleBySlug(slug: string): Promise<Article | null> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       const { data, error } = await supabase
         .from("articles")
         .select("*")
@@ -76,7 +76,7 @@ export const ContentService = {
     const to = from + perPage - 1
 
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       let query = supabase
         .from("news_items")
         .select("id,slug,headline,summary,hero_image_url,author_id,cluster_id,category_id,status,importance,published_at,source_published_at,view_count,featured,created_at,updated_at", { count: "exact" })
@@ -107,7 +107,7 @@ export const ContentService = {
 
   async getNewsBySlug(slug: string): Promise<NewsItem | null> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       const { data, error } = await supabase
         .from("news_items")
         .select("*")
@@ -124,7 +124,7 @@ export const ContentService = {
 
   async getFeaturedContent(): Promise<{ articles: Article[]; news: NewsItem[] }> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       const [articlesResult, newsResult] = await Promise.all([
         supabase
           .from("articles")
@@ -166,7 +166,7 @@ export const ContentService = {
     if (!table) return
 
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).rpc("increment_view_count", { table_name: table, row_id: id })
     } catch {

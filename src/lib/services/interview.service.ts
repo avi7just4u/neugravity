@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server"
+import { createAnonClient } from "@/lib/supabase/server"
 import type { Interview } from "@/types"
 
 function formatDuration(seconds: number | null): string {
@@ -15,7 +15,7 @@ export const InterviewService = {
     data: Interview[]
     total: number
   }> {
-    const supabase = await createServiceClient()
+    const supabase = createAnonClient()
     const page = opts.page ?? 1
     const perPage = opts.perPage ?? 20
     const from = (page - 1) * perPage
@@ -39,7 +39,7 @@ export const InterviewService = {
   },
 
   async getInterviewBySlug(slug: string): Promise<Interview | null> {
-    const supabase = await createServiceClient()
+    const supabase = createAnonClient()
     const { data, error } = await supabase
       .from("interviews")
       .select("*")

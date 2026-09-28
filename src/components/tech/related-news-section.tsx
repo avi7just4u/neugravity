@@ -28,7 +28,7 @@ export function RelatedNewsSection({ news }: Props) {
             href={`/news/${item.slug}`}
             className="group block p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-sm transition-all"
           >
-            <div className="text-sm font-medium text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 leading-snug">
+            <div className="text-sm font-medium text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 leading-snug">
               {item.headline}
             </div>
             <div className="flex items-center gap-2 mt-1.5">

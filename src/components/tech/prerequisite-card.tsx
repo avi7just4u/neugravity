@@ -17,13 +17,13 @@ export function PrerequisiteCard({ technology, label = "prerequisite" }: Props) 
         <div className="flex items-center gap-2 mb-0.5">
           <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded uppercase tracking-wide ${
             label === "next"
-              ? "bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
+              ? "bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400"
               : "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
           }`}>
             {label === "next" ? "Learn next" : "Required"}
           </span>
         </div>
-        <div className="text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+        <div className="text-sm font-semibold text-zinc-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
           {technology.name}
         </div>
         {technology.tagline && (
@@ -32,7 +32,7 @@ export function PrerequisiteCard({ technology, label = "prerequisite" }: Props) 
           </div>
         )}
       </div>
-      <ArrowRight className="h-4 w-4 text-zinc-300 dark:text-zinc-600 group-hover:text-blue-500 transition-colors flex-shrink-0" />
+      <ArrowRight className="h-4 w-4 text-zinc-300 dark:text-zinc-600 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
     </Link>
   )
 }

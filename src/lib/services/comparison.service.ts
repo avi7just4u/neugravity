@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server"
+import { createAnonClient } from "@/lib/supabase/server"
 import { ENV } from "@/lib/config/environment"
 import type { Comparison, PaginatedResponse } from "@/types"
 
@@ -13,7 +13,7 @@ export const ComparisonService = {
     const to = from + perPage - 1
 
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       let query = supabase
         .from("comparisons")
         .select("*", { count: "exact" })
@@ -42,7 +42,7 @@ export const ComparisonService = {
 
   async getComparisonBySlug(slug: string): Promise<Comparison | null> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       const { data, error } = await supabase
         .from("comparisons")
         .select("*")
@@ -59,7 +59,7 @@ export const ComparisonService = {
 
   async getPopularComparisons(limit = 5): Promise<Comparison[]> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       let q = supabase
         .from("comparisons")
         .select("*")

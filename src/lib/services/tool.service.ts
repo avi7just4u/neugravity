@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/lib/supabase/server"
+import { createAnonClient } from "@/lib/supabase/server"
 import { ENV } from "@/lib/config/environment"
 import type { Tool, PaginatedResponse } from "@/types"
 
@@ -16,7 +16,7 @@ export const ToolService = {
     const to = from + perPage - 1
 
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       let query = supabase
         .from("tools")
         .select("id,slug,name,tagline,description,icon_url,logo_url,website_url,category_id,company_id,tool_type,pricing_model,has_free_tier,has_api,enterprise_available,status,featured,trending_score,popularity_score,rating_average,rating_count,created_at,updated_at", { count: "exact" })
@@ -48,7 +48,7 @@ export const ToolService = {
 
   async getToolBySlug(slug: string): Promise<Tool | null> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       const { data, error } = await supabase
         .from("tools")
         .select("*")
@@ -65,7 +65,7 @@ export const ToolService = {
 
   async getAlternativeTools(toolId: string, limit = 6): Promise<Tool[]> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       // Single query: join on category to avoid two round-trips
       const { data: self } = await supabase
         .from("tools")
@@ -97,7 +97,7 @@ export const ToolService = {
 
   async getFeaturedTools(limit = 6): Promise<Tool[]> {
     try {
-      const supabase = await createServiceClient()
+      const supabase = createAnonClient()
       const { data, error } = await supabase
         .from("tools")
         .select("id,slug,name,tagline,icon_url,logo_url,tool_type,pricing_model,has_free_tier,rating_average,rating_count,popularity_score,trending_score,featured")

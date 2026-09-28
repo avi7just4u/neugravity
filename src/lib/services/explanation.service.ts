@@ -1,4 +1,4 @@
-import { createAdminClient, createServiceClient } from "@/lib/supabase/server"
+import { createAdminClient, createAnonClient } from "@/lib/supabase/server"
 import { AI_CONFIG } from "@/lib/config/ai.config"
 import type { TechnologyExplanation, ExplanationType } from "@/types"
 
@@ -111,7 +111,7 @@ export const ExplanationService = {
     type: ExplanationType
   ): Promise<TechnologyExplanation | null> {
     try {
-      const db = await createServiceClient()
+      const db = createAnonClient()
       const { data } = await db
         .from("technology_explanations")
         .select("*")
@@ -129,7 +129,7 @@ export const ExplanationService = {
 
   async getAllPublished(technologyId: string): Promise<TechnologyExplanation[]> {
     try {
-      const db = await createServiceClient()
+      const db = createAnonClient()
       const { data } = await db
         .from("technology_explanations")
         .select("*")
