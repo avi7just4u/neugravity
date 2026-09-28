@@ -66,6 +66,32 @@ export function Navbar() {
     return () => { document.body.style.overflow = "" }
   }, [mobileOpen])
 
+  // Focus trap: when drawer is open, constrain Tab/Shift+Tab to #mobile-nav
+  const hamburgerRef = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => {
+    if (!mobileOpen) return
+    const drawer = document.getElementById("mobile-nav")
+    if (!drawer) return
+    const focusable = () => Array.from(
+      drawer.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),input,textarea,select,[tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((el) => !el.closest("[aria-hidden]"))
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { closeMobile(); hamburgerRef.current?.focus(); return }
+      if (e.key !== "Tab") return
+      const els = focusable()
+      if (!els.length) return
+      const first = els[0]; const last = els[els.length - 1]
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus() } }
+      else            { if (document.activeElement === last)  { e.preventDefault(); first.focus() } }
+    }
+    // Set initial focus to first focusable element in drawer
+    focusable()[0]?.focus()
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [mobileOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <>
       {/* ──────────────────── HEADER ──────────────────── */}
@@ -149,6 +175,7 @@ export function Navbar() {
 
               {/* Hamburger — mobile */}
               <button
+                ref={hamburgerRef}
                 onClick={() => setMobileOpen(!mobileOpen)}
                 className="flex items-center justify-center h-11 w-11 rounded-md border border-zinc-200 lg:hidden dark:border-zinc-700 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-700 dark:hover:text-indigo-400 transition-colors"
                 aria-label={mobileOpen ? "Close menu" : "Open menu"}
