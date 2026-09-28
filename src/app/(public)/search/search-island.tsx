@@ -78,12 +78,29 @@ export function SearchIsland({ initialQuery }: { initialQuery: string }) {
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
             Showing results for <strong className="text-zinc-900 dark:text-white">&ldquo;{initialQuery}&rdquo;</strong>
           </p>
-          <div className="p-8 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 text-center">
-            <Search className="h-8 w-8 text-zinc-200 dark:text-zinc-700 mx-auto mb-3" />
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">Search is coming soon</p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
-              Full database-powered search will be available once the search index is connected.
+          <div className="space-y-3">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+              Browse by category while full-text search is being set up:
             </p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Technologies", href: `/tech`, icon: <Cpu className="h-4 w-4" /> },
+                { label: "Tools", href: `/tools`, icon: <Wrench className="h-4 w-4" /> },
+                { label: "Companies", href: `/companies`, icon: <Building2 className="h-4 w-4" /> },
+                { label: "News", href: `/news`, icon: <Newspaper className="h-4 w-4" /> },
+                { label: "Courses", href: `/courses`, icon: <BookOpen className="h-4 w-4" /> },
+                { label: "Articles", href: `/articles`, icon: <Code2 className="h-4 w-4" /> },
+              ].map(({ label, href, icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="flex items-center gap-2.5 px-4 py-3 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm text-zinc-700 dark:text-zinc-300 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-700 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <span className="text-zinc-400">{icon}</span>
+                  {label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       )}

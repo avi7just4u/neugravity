@@ -208,43 +208,26 @@ export default async function ToolDetailPage({
             )}
           </section>
 
-          {/* Key features — verified data only; structured feature list coming with real data */}
-          <section>
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">Key Features</h2>
-            <div className="card-raised p-5 text-sm text-zinc-500 dark:text-zinc-400">
-              Detailed feature breakdown for {tool.name} is being compiled from official sources.{" "}
-              {tool.website_url && (
-                <a href={tool.website_url} target="_blank" rel="noopener noreferrer"
-                  className="text-indigo-600 dark:text-indigo-400 hover:underline">
-                  View official documentation →
-                </a>
-              )}
-            </div>
-          </section>
-
-          {/* Pricing */}
-          <section>
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">Pricing</h2>
-            <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 flex items-start gap-2 text-sm mb-4">
-              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-amber-800 dark:text-amber-300">
-                Pricing is sourced from official sources and verified periodically. Always confirm on the official website.
-              </p>
-            </div>
-            <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Structured pricing tiers coming soon.</p>
-              {tool.website_url && (
-                <a
-                  href={`${tool.website_url}/pricing`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2 block"
-                >
-                  View pricing on official website →
-                </a>
-              )}
-            </div>
-          </section>
+          {/* Pricing — only render if we have a real pricing page URL to link to */}
+          {tool.website_url && (
+            <section>
+              <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-3">Pricing</h2>
+              <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 flex items-start gap-2 text-sm mb-4">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-amber-800 dark:text-amber-300">
+                  Always confirm pricing on the official website — it may have changed.
+                </p>
+              </div>
+              <a
+                href={`${tool.website_url}/pricing`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                View pricing on official website →
+              </a>
+            </section>
+          )}
         </div>
 
         {/* Sidebar */}
