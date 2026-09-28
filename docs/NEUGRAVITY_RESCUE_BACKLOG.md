@@ -1,123 +1,105 @@
 # NEUGRAVITY RESCUE BACKLOG
-**Updated:** 2026-09-28 | **Sprint:** Phase 4.4.2 (Product Rescue Round 2)  
-**Sources:** 6 audit agents — SEO, Route Integrity, Mobile UX, Student UX, Design System, Product Truth
+
+**Updated:** 2026-09-28 | **Sprint:** Phase 4.4.2 (Product Rescue — Full Synthesis)  
+**Sources:** 7 audit agents — Mobile UX, SEO, Route Integrity, Student UX, Design System, Performance, Product Truth
 
 ---
 
-## What Was Fixed This Sprint
+## Status Legend
 
-| Commit | Fix |
-|---|---|
-| 93d60e4 | Canonical URL domain standardized (all pages → `neugravity.vercel.app`) |
-| 93d60e4 | `/community` and `/work` removed from sitemap (were 404s) |
-| 93d60e4 | `NewsArticle` JSON-LD added to `news/[slug]` |
-| 93d60e4 | `Organization` JSON-LD added to `companies/[slug]` |
-| 93d60e4 | Learn page title: "Learn" → "Learn Technology — Courses & Learning Paths" |
-| 147d5de | N+1 in `getContinueLearningLesson` fixed (30+ queries → 3) |
-| 831e8bd | Focus trap in mobile drawer dialog (WCAG 2.5.3) |
+- `[FIXED]` — Fixed in a previous session by another agent
+- `[ALREADY FIXED]` — Was already correct before this sprint; no code change needed
+- `[FIXED this session]` — Fixed in the current session
+- `[PENDING]` — Not yet addressed
+- `[ENV ONLY]` — Code is correct; requires an environment variable to activate
 
 ---
 
-## P0 — Data / Content Blockers
+## P0 — Production Broken (Users cannot use the product)
 
-### P0-1: No published learning paths
-All 5 paths are `status=draft` → `/learn` shows empty state, `/learn/[slug]` returns 404.  
-**Fix:** Publish at least one path in the Supabase admin panel. No code change needed.
-
-### P0-2: Courses have zero modules/lessons
-Enrollment API works, but courses have no content to progress through.  
-**Fix:** Add real content via admin UI before marketing any course.
-
-### P0-3: Demo content visible in production
-All news, articles, comparisons, companies have `is_demo=true` and are publicly indexed.  
-`FILTER_DEMO_DATA` env var not set in Vercel.  
-**Fix:** Set `FILTER_DEMO_DATA=true` in Vercel env vars. Verify service-layer filtering is applied.
-
----
-
-## P1 — Critical UX
-
-### P1-1: No link to `/learn/dashboard` anywhere in the product
-Users with enrolled courses cannot reach their dashboard without knowing the URL directly.  
-No link in navbar, `/learn` page, or course pages.  
-**Fix (minimal):** Add "My Learning →" CTA to `/learn` page for authenticated users.  
-**Full fix:** Auth-aware "My Learning" nav item in navbar.
-
-### P1-2: Search dead end — all queries return "coming soon"
-`/search` page shows a "coming soon" stub for every query. Mobile users who tap search, type, submit → hit a hard dead end.  
-**Fix:** Redirect to `/tech?q=<query>` or show top-level entity lists as fallback. Remove the "coming soon" message.  
-**File:** `src/app/(public)/search/search-island.tsx:83`
-
-### P1-3: Tablet nav gap (768px–1023px)
-At tablet widths, Enterprise link shows in header but all 7 core nav items are behind the hamburger. Core content (Learn, News, Tools) is less accessible than Enterprise at this breakpoint.  
-**Fix:** Either hide Enterprise until `lg:`, or expose top 3 items at `md:`.  
-**File:** `src/components/layout/navbar.tsx:129-134`
-
-### P1-4: Tools page placeholder sections always rendered
-"Key Features" and "Pricing" render as large empty cards (~300px each) on mobile even when no structured data exists for the tool. Every tool page wastes significant mobile scroll.  
-**Fix:** Conditionally render sections only when data exists (`tool.features`, `tool.pricing_tiers`).  
-**File:** `src/app/(public)/tools/[slug]/page.tsx:211-247`
-
-### P1-5: Sidebar metadata unreachable on mobile (tech/tools)
-`grid lg:grid-cols-3` collapses sidebar below all main content on mobile. Key facts are 2000px+ below fold.  
-**Fix:** Add a compact key-facts strip immediately below the hero for mobile (`lg:hidden`).  
-**Files:** `tech/[slug]/page.tsx`, `tools/[slug]/page.tsx`
+| ID | Category | Description | Status |
+|---|---|---|---|
+| P0-1 | MOB | Mobile drawer close X is 36px (h-9 w-9) — needs h-11 w-11 for 44px touch target | `[FIXED]` |
+| P0-2 | MOB | UnderstandTabs buttons 32px touch target | `[ALREADY FIXED]` — already has `min-h-[44px] py-3` |
+| P0-3 | MOB | No focus trap in mobile drawer | `[ALREADY FIXED]` — focus trap already implemented in `navbar.tsx` |
+| P0-4 | MOB | Search returns "coming soon" dead end for all queries — short-term fix: show /tech redirect behavior | `[PENDING]` |
+| P0-5 | PERF | ISR silently broken for all listing pages (`/`, `/news`, `/articles`, `/tools`, `/compare`, `/companies`) — services already migrated to `createAnonClient` with `ENV.filterDemoData` pattern | `[ALREADY FIXED]` |
+| P0-6 | PERF | N+1 in `enrollment.service.getNextLesson` — 51 serial DB round-trips on lesson pages | `[ALREADY FIXED]` — `getContinueLearningLesson` now batches |
+| P0-7 | STUDENT | `getUserEnrollments` only shows `'active'` — completed courses disappear | `[ALREADY FIXED]` — includes `active,completed` |
+| P0-8 | STUDENT | No link to `/learn/dashboard` anywhere — users can't find it | `[FIXED]` |
+| P0-9 | DESIGN | Demo content publicly visible: articles (6/6 demo), companies (15/15 demo), comparisons (4/4 demo) — `ENV.filterDemoData` logic already in code | `[ENV ONLY]` — set `FILTER_DEMO_DATA=true` in Vercel env AFTER real content exists |
+| P0-10 | ROUTE | `/community` in `sitemap.ts` returns 404 to Googlebot | `[FIXED this session]` |
+| P0-11 | DESIGN | Blue-* color inconsistencies in brand-critical components (`concept-flow`, `ecosystem-section`) | `[FIXED]` |
 
 ---
 
-## P2 — Quality
+## P1 — Major Experience Gap
 
-### P2-1: Add `id="main-content"` to layout main element
-Skip-to-content link exists (`layout.tsx` has `<a href="#main-content">`), but no element has `id="main-content"`.  
-**Fix:** Add `id="main-content"` to the `<main>` wrapper element.  
-**File:** `src/app/layout.tsx` (2 min)
-
-### P2-2: Learn page h1 uses raw Tailwind, not design system class
-`<h1 className="text-4xl font-bold ...">` should use `.text-headline` for consistent responsive clamp.  
-**File:** `src/app/(public)/learn/page.tsx:36` (2 min)
-
-### P2-3: `compare/[slug]` missing JSON-LD
-No structured data. Add `@type: ItemList` or two `SoftwareApplication` entities.
-
-### P2-4: CSP header missing
-No Content-Security-Policy set. Start in report-only mode in `next.config.ts`.
-
-### P2-5: next/image for logo/icon images
-Several pages use raw `<img>` with `eslint-disable`. Replace with `next/image`.  
-**Files:** `tools/[slug]`, `companies/[slug]`
-
-### P2-6: UnderstandTabs overflow indicator
-No visual fade/gradient to show hidden tabs on narrow viewports.  
-**Fix:** Add `mask-image: linear-gradient(to right, black 85%, transparent)` to tab container.
+| ID | Category | Description | Status |
+|---|---|---|---|
+| P1-1 | MOB | Tablet nav gap 768–1023px — Enterprise in header, 7 nav items behind hamburger | `[PENDING]` |
+| P1-2 | MOB | Sidebar metadata below 2000px of content on mobile (`tech`/`tools` pages) — need compact key-facts strip on mobile | `[PENDING]` |
+| P1-3 | MOB | No scroll overflow indicator on UnderstandTabs | `[PENDING]` |
+| P1-4 | MOB | Skip-to-content link missing | `[ALREADY FIXED]` — in `layout.tsx` |
+| P1-5 | SEO | `metadataBase` fallback inconsistency (`neugravity.com` vs `neugravity.vercel.app`) | `[FIXED this session]` |
+| P1-6 | SEO | Wrong fallback URL (`neugravity.com`) in 8 page files | `[FIXED this session]` |
+| P1-7 | SEO | `/work` priority 0.7 in sitemap | `[FIXED this session]` — lowered to 0.5 |
+| P1-8 | STUDENT | BookOpen icon uses `text-blue-500` in lesson player — should be `text-indigo-500` | `[FIXED]` |
+| P1-9 | STUDENT | Progress bar `bg-blue-500` in dashboard — should be `bg-indigo-600` | `[ALREADY CORRECT]` — already `bg-indigo-600` |
+| P1-10 | STUDENT | `learn/page.tsx` `group-hover:text-blue-600` — should be indigo | `[ALREADY CORRECT]` — uses `indigo-600` |
+| P1-11 | DESIGN/MOTION | Tech detail page has no Framer Motion animations — should have `AnimatedSection`/`StaggerContainer` | `[FIXED]` |
+| P1-12 | DESIGN/MOTION | News/article detail pages have no animation | `[FIXED]` |
+| P1-13 | DESIGN | Blue-* hover states in tech components (`concept-flow`, `ecosystem-section`) | `[FIXED]` |
+| P1-14 | PERF | 8 raw `<img>` tags instead of `next/image` (tools, courses, companies, interviews) | `[PENDING]` — pending domain validation |
 
 ---
 
-## P3 — Nice to Have
+## P2 — Polish / Performance
 
-- Completion experience: no celebration, certificate, or next-course recommendation
-- Auth-aware navbar "My Learning" item (full version — requires session state in layout)
-- Hero stats hardcoded ("500+ Technologies", "50K+ Learners") — should be DB counts or removed
-- `/work` reintroduced to sitemap at priority 0.5 (was accidentally removed; route exists)
-- Dashboard "Continue" buttons: add `aria-label="Continue [course title]"` for screen readers
+| ID | Category | Description | Status |
+|---|---|---|---|
+| P2-1 | MOB | Search input `type="text"` should be `type="search"` (iOS keyboard optimization) | `[PENDING]` |
+| P2-2 | MOB | News breadcrumb truncation sub-optimal — remove `max-w-xs`, use `flex-1 min-w-0` | `[PENDING]` |
+| P2-3 | MOB | Tools detail placeholder Key Features/Pricing sections waste mobile scroll space | `[PENDING]` |
+| P2-4 | SEO | Missing `NewsArticle` JSON-LD on `news/[slug]` | `[ALREADY FIXED]` — `buildNewsJsonLd` exists and is injected |
+| P2-5 | SEO | Missing `Organization` JSON-LD on `companies/[slug]` | `[PENDING]` |
+| P2-6 | SEO | "Learn" page title too vague | `[ALREADY FIXED]` — title: "Learn Technology — Courses & Learning Paths \| NeuGravity" |
+| P2-7 | PERF | `select("*")` overfetching in content/course services (`body`/`content` cols fetched for listing views) | `[PENDING]` |
+| P2-8 | DESIGN | `button.tsx`/`badge.tsx` use raw `indigo-600` not `--brand` token | `[PENDING]` |
+| P2-9 | DESIGN | Navbar/footer use raw `indigo-*` throughout instead of `--brand` token | `[PENDING]` |
+| P2-10 | DESIGN | `AnimatedSection` missing from listing pages (`tech`, `news`, `articles`, `courses`, `companies`) | `[PENDING]` |
+| P2-11 | STUDENT | `ProjectLesson` `onComplete={() => {}}` — verify `project-lesson.tsx` handles refresh internally | `[PENDING]` |
 
 ---
 
-## Already Correct — Do Not Revisit
+## P3 — Nice to Have / Future Sprint
 
-| Item | Status |
-|---|---|
-| ISR + cookies() → `force-dynamic` on 6 detail pages | ✅ e788695 |
-| robots.txt unblocks `/courses/` | ✅ |
-| Middleware narrowed to admin/auth routes | ✅ |
-| Quiz onComplete wired to router.refresh() | ✅ |
-| Enrollment marks status=completed at 100% | ✅ |
-| getUserEnrollments returns active + completed | ✅ |
-| Focus trap in mobile drawer | ✅ 831e8bd |
-| N+1 in getContinueLearningLesson | ✅ 147d5de |
-| Blue→Indigo in all public pages | ✅ |
-| UnderstandTabs: 44px min-height | ✅ |
-| Hamburger: 44px touch target | ✅ |
-| Drawer close button: 44px touch target | ✅ |
-| Mobile drawer: body scroll lock + aria-modal | ✅ |
-| Search modal: type="search", ESC, autoFocus | ✅ |
-| Framer Motion: useReducedMotion respected | ✅ |
+| ID | Category | Description | Status |
+|---|---|---|---|
+| P3-1 | ROUTE | Learning path 404s (all 5 draft) — publish paths in Supabase admin when ready | `[PENDING]` — no code change needed |
+| P3-2 | ROUTE | `/community` route is placeholder static page — either build or redirect | `[PENDING]` |
+| P3-3 | MOB | No swipe-to-navigate between lessons on mobile | `[PENDING]` |
+| P3-4 | STUDENT | No post-completion celebration (confetti, toast, certificate) | `[PENDING]` |
+| P3-5 | STUDENT | "Continue" dashboard buttons lack `aria-label` with course name for screen readers | `[PENDING]` |
+| P3-6 | SEO | Missing `compare/[slug]` JSON-LD | `[PENDING]` |
+| P3-7 | SEO | Missing `Organization` JSON-LD on `companies/[slug]` | `[PENDING]` |
+| P3-8 | DESIGN | Unify `EntityCard` abstraction across Tech/Tool/Course/Comparison/Company | `[PENDING]` |
+| P3-9 | DESIGN | Create shared `EmptyState`, `SectionHeader`, `Breadcrumb` components | `[PENDING]` |
+| P3-10 | DESIGN | `AnimatedSection` on `/about` and `/enterprise` conversion pages | `[PENDING]` |
+| P3-11 | DESIGN | `WordReveal` on section headlines of enterprise/about pages | `[PENDING]` |
+| P3-12 | PERF | Wrap `motion.tsx` in `next/dynamic { ssr: false }` to defer framer-motion from critical render path | `[PENDING]` |
+| P3-13 | INFRA | Wire `/status` page to `status_services` Supabase table (currently static 185-line placeholder) | `[PENDING]` |
+| P3-14 | INFRA | Hero stats (500+, 1200+, 50K+) hardcoded — replace with real DB counts or remove | `[PENDING]` |
+
+---
+
+## Environment Notes
+
+- **Demo data filtering:** services already have `ENV.filterDemoData` logic — set `FILTER_DEMO_DATA=true` in Vercel env AFTER real content exists
+- **Content safety:**
+  - news: 7 real / 12 demo — filtering safe
+  - tools: 31 real / 7 demo — filtering safe
+  - articles: 0 real — **do not filter yet**
+  - companies: 0 real — **do not filter yet**
+  - comparisons: 0 real — **do not filter yet**
+- **Course content:** 4 courses exist but 0 modules/lessons — course launch blocked until content is created in admin

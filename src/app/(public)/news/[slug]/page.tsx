@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Clock, ChevronRight } from "lucide-react"
 import { ContentService } from "@/lib/services/content.service"
 import { formatDate, formatRelativeDate } from "@/lib/utils"
+import { AnimatedSection } from "@/components/ui/motion"
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
 
@@ -88,7 +89,8 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
       </nav>
 
       <div className="grid lg:grid-cols-3 gap-10">
-        <article className="lg:col-span-2 space-y-6">
+        <AnimatedSection className="lg:col-span-2">
+        <article className="space-y-6">
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-3">
               {importanceBadge(item.importance)}
@@ -125,7 +127,9 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
             </div>
           )}
         </article>
+        </AnimatedSection>
 
+        <AnimatedSection delay={0.1}>
         <aside className="space-y-5">
           {item.sources && item.sources.length > 0 && (
             <div className="card-base p-5">
@@ -155,6 +159,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ slu
             <p className="text-xs text-zinc-500">Technologies mentioned in this story will appear here.</p>
           </div>
         </aside>
+        </AnimatedSection>
       </div>
     </div>
   )

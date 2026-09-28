@@ -15,6 +15,7 @@ import { EcosystemSection } from "@/components/tech/ecosystem-section"
 import { RelatedNewsSection } from "@/components/tech/related-news-section"
 import { TechPageAnalytics } from "@/components/tech/tech-page-analytics"
 import { TECH_FLOWS } from "@/lib/knowledge/tech-flows"
+import { AnimatedSection } from "@/components/ui/motion"
 import type { Technology, ExplanationType, TechnologyWithRelations } from "@/types"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://neugravity.vercel.app"
@@ -211,6 +212,7 @@ export default async function TechDetailPage({
           {/* ── Main column ── */}
           <div className="lg:col-span-2 space-y-12">
             {/* Hero */}
+            <AnimatedSection>
             <header>
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <Badge variant={typeVariant[tech.type] ?? "secondary"} className="capitalize">{tech.type}</Badge>
@@ -260,6 +262,7 @@ export default async function TechDetailPage({
                 </div>
               )}
             </header>
+            </AnimatedSection>
 
             {/* Understand */}
             {hasExplanations && (
@@ -402,6 +405,7 @@ export default async function TechDetailPage({
           </div>
 
           {/* ── Sidebar ── */}
+          <AnimatedSection delay={0.15}>
           <aside className="space-y-6">
             {/* Key facts */}
             {facts.length > 0 && (
@@ -546,6 +550,7 @@ export default async function TechDetailPage({
               </ul>
             </div>
           </aside>
+          </AnimatedSection>
         </div>
       </div>
     </>

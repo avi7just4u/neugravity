@@ -42,6 +42,9 @@ export default async function LearnPage() {
         </p>
         <div className="flex gap-3 mt-5">
           <Button asChild><Link href="/courses">Browse Courses</Link></Button>
+          <Button variant="outline" asChild>
+            <Link href="/learn/dashboard">My Learning</Link>
+          </Button>
         </div>
       </div>
 
