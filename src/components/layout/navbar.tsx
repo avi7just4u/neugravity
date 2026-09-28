@@ -154,13 +154,13 @@ export function Navbar() {
               {/* Enterprise — desktop */}
               <Link
                 href="/enterprise"
-                className="hidden md:flex items-center px-3 py-1.5 text-sm font-medium text-zinc-600 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400 transition-colors"
+                className="hidden lg:flex items-center px-3 py-1.5 text-sm font-medium text-zinc-600 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400 transition-colors"
               >
                 Enterprise
               </Link>
 
               {/* Auth — desktop */}
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden lg:flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">Sign in</Link>
                 </Button>

@@ -208,6 +208,18 @@ export default async function TechDetailPage({
           <span className="text-zinc-600 dark:text-zinc-300">{tech.name}</span>
         </nav>
 
+        {/* Mobile key-facts strip — visible only below lg, sidebar unreachable on mobile */}
+        {facts.length > 0 && (
+          <div className="lg:hidden flex flex-wrap gap-x-5 gap-y-2 mb-6 pb-5 border-b border-zinc-200 dark:border-zinc-800">
+            {facts.slice(0, 4).map(({ label, value }) => (
+              <div key={label} className="flex items-baseline gap-1.5 text-sm">
+                <span className="text-zinc-400 text-xs uppercase tracking-wide shrink-0">{label}</span>
+                <span className="text-zinc-900 dark:text-white font-medium capitalize">{String(value)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-3 gap-10">
           {/* ── Main column ── */}
           <div className="lg:col-span-2 space-y-12">

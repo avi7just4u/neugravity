@@ -22,12 +22,14 @@ export function UnderstandTabs({ available, defaultTab }: Props) {
 
   return (
     <>
-      {/* Tab controls */}
-      <div
-        className="flex gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 overflow-x-auto"
-        role="tablist"
-        aria-label="Explanation depth"
-      >
+      {/* Tab controls — gradient mask on right indicates horizontal scroll at narrow widths */}
+      <div className="relative">
+        <div
+          className="flex gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 overflow-x-auto scrollbar-hide"
+          role="tablist"
+          aria-label="Explanation depth"
+          style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+        >
         {TABS.filter((t) => available.includes(t.type)).map((tab) => (
           <button
             key={tab.type}
@@ -51,6 +53,12 @@ export function UnderstandTabs({ available, defaultTab }: Props) {
             {tab.label}
           </button>
         ))}
+        </div>
+        {/* Right-edge fade — visible only when content overflows at narrow widths */}
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 w-8 rounded-r-xl bg-gradient-to-l from-zinc-100 dark:from-zinc-800/50 to-transparent"
+          aria-hidden="true"
+        />
       </div>
     </>
   )
